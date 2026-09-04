@@ -1090,6 +1090,8 @@ class QRApp:
         self.master = master
         self.opts = start or QROptionen()
         self.gewuenscht = self.opts          # ungeprueft, fuer den Vergleich
+        self.transparenz_wunsch = self.opts.transparent   # ueberlebt Formatwechsel
+        self.feld_hinweise: list[str] = []   # wartet auf das naechste Neuzeichnen
         self.ergebnis: QRErgebnis | None = None
         self.vorschau_bild = None            # Referenz halten, sonst verschwindet sie
         self.nachlauf = None                 # laufender after()-Auftrag
@@ -1420,8 +1422,14 @@ class QRApp:
             row=0, column=1, sticky="ew")
 
         beschriftung(_("Größe (px)"), 0, 2)
-        ttk.Combobox(gitter, textvariable=self.var_groesse, font=FONT_SMALL, width=10,
-                     values=[str(g) for g in GROESSEN_VORGABEN]).grid(row=0, column=3, sticky="ew")
+        self.feld_groesse = ttk.Combobox(gitter, textvariable=self.var_groesse,
+                                         font=FONT_SMALL, width=10)
+        self.feld_groesse.grid(row=0, column=3, sticky="ew")
+        # Beim Verlassen des Feldes und bei Eingabetaste in den erlaubten
+        # Bereich holen - waehrend des Tippens waere das laestig, weil "1024"
+        # unterwegs durch 1, 10 und 102 laeuft.
+        for ereignis in ("<FocusOut>", "<Return>"):
+            self.feld_groesse.bind(ereignis, lambda _e: self._groesse_begrenzen())
 
         beschriftung(_("Fehlerkorrektur"), 1, 0)
         ttk.Combobox(gitter, textvariable=self.var_korrektur, values=list(FEHLERKORREKTUR),
@@ -1429,18 +1437,27 @@ class QRApp:
             row=1, column=1, sticky="ew")
 
         beschriftung(_("Rand (Module)"), 1, 2)
-        ttk.Spinbox(gitter, from_=0, to=32, textvariable=self.var_rand, font=FONT_SMALL,
-                    width=10).grid(row=1, column=3, sticky="ew")
+        self.feld_rand = ttk.Spinbox(gitter, from_=0, to=32, textvariable=self.var_rand,
+                                     font=FONT_SMALL, width=10)
+        self.feld_rand.grid(row=1, column=3, sticky="ew")
+        for ereignis in ("<FocusOut>", "<Return>"):
+            self.feld_rand.bind(ereignis, lambda _e: self._zahl_begrenzen(self.var_rand, 0, 32))
 
         beschriftung(_("Auflösung (DPI)"), 2, 0)
-        ttk.Spinbox(gitter, from_=72, to=1200, textvariable=self.var_dpi, font=FONT_SMALL,
-                    width=10).grid(row=2, column=1, sticky="ew")
+        self.feld_dpi = ttk.Spinbox(gitter, from_=72, to=1200, textvariable=self.var_dpi,
+                                    font=FONT_SMALL, width=10)
+        self.feld_dpi.grid(row=2, column=1, sticky="ew")
+        for ereignis in ("<FocusOut>", "<Return>"):
+            self.feld_dpi.bind(ereignis, lambda _e: self._zahl_begrenzen(self.var_dpi, 72, 1200))
 
-        faerben(tk.Checkbutton(gitter, text=_("Hintergrund transparent"),
-                               variable=self.var_transparent, font=FONT_SMALL,
-                               highlightthickness=0, bd=0, cursor="hand2", anchor="w"),
-                bg="CARD", fg="TEXT", activebackground="CARD", activeforeground="TEXT",
-                selectcolor="FIELD_BG").grid(row=2, column=2, columnspan=2, sticky="w", pady=4)
+        self.feld_transparent = faerben(
+            tk.Checkbutton(gitter, text=_("Hintergrund transparent"),
+                           variable=self.var_transparent, command=self._transparenz_umgeschaltet,
+                           font=FONT_SMALL, highlightthickness=0, bd=0, cursor="hand2",
+                           anchor="w"),
+            bg="CARD", fg="TEXT", activebackground="CARD", activeforeground="TEXT",
+            selectcolor="FIELD_BG", disabledforeground="BTN_DISABLED")
+        self.feld_transparent.grid(row=2, column=2, columnspan=2, sticky="w", pady=4)
 
         beschriftung(_("Vordergrund"), 3, 0)
         self.knopf_vg = FlatButton(
@@ -1453,6 +1470,99 @@ class QRApp:
             gitter, self.var_hintergrund.get(),
             lambda: self._farbe_waehlen(self.var_hintergrund, _("Hintergrundfarbe")))
         self.knopf_hg.grid(row=3, column=3, sticky="ew")
+
+        # Erst jetzt, wo die Felder stehen, darf der Formatwechsel sie anfassen.
+        self.var_format.trace_add("write", lambda *_a: self._format_gewechselt())
+        self._felder_an_format_anpassen()
+
+    # -- Felder an das gewaehlte Format anpassen ---------------------------
+    #
+    # Lieber gar nicht erst zulassen, was das Format nicht kann, als es
+    # hinterher stillschweigend zu korrigieren: Transparenz wird ausgegraut,
+    # wo es sie nicht gibt, und die Groessenauswahl endet beim Maximum des
+    # Formats. anpassungen_beschreiben() bleibt als Auffangnetz - fuer die
+    # Kommandozeile und fuer den Moment zwischen Tippen und Feldwechsel.
+
+    def _format_gewechselt(self) -> None:
+        # Der Hinweis wird gemerkt statt sofort gesetzt: Das Neuzeichnen laeuft
+        # kurz darauf und wuerde die Statuszeile sonst gleich ueberschreiben.
+        #
+        # Nur ueberschreiben, wenn es etwas zu sagen gibt: Tk schreibt die
+        # Variable eines Auswahlfeldes beim Aktualisieren gelegentlich erneut,
+        # der Rueckruf laeuft dann ein zweites Mal. Beim zweiten Mal ist schon
+        # alles angepasst - eine leere Liste wuerde die Meldung verschlucken,
+        # bevor das Neuzeichnen sie zeigen konnte.
+        hinweise = self._felder_an_format_anpassen()
+        if hinweise:
+            self.feld_hinweise = hinweise
+
+    def _felder_an_format_anpassen(self) -> list[str]:
+        """Setzt Auswahl und Verfügbarkeit der Felder passend zum Format.
+
+        Rueckgabe sind Meldungen ueber Werte, die dabei geaendert werden
+        mussten - beim ersten Aufbau werden sie verworfen, sonst stuende
+        gleich beim Start ein Hinweis in der Statuszeile.
+        """
+        name = self.var_format.get()
+        if name not in FORMATE:
+            return []
+        info = FORMATE[name]
+        hinweise = []
+
+        # --- Transparenz ---
+        if info.alpha:
+            self.feld_transparent.configure(state="normal")
+            self.var_transparent.set(self.transparenz_wunsch)
+        else:
+            # Der Wunsch bleibt gemerkt: Beim Wechsel zurueck zu einem Format
+            # mit Transparenz steht das Haekchen wieder da, wo es war.
+            self.feld_transparent.configure(state="disabled")
+            if self.var_transparent.get():
+                self.var_transparent.set(False)
+
+        # --- Groesse ---
+        grenze = info.max_kante or MAX_KANTE
+        werte = [g for g in GROESSEN_VORGABEN if g <= grenze]
+        if grenze not in werte and grenze <= MAX_KANTE and info.max_kante:
+            werte.append(grenze)
+        self.feld_groesse.configure(values=[str(g) for g in werte])
+
+        try:
+            aktuell = int(str(self.var_groesse.get()).strip())
+        except ValueError:
+            return hinweise                       # unfertige Eingabe in Ruhe lassen
+        if aktuell > grenze:
+            self.var_groesse.set(str(grenze))
+            hinweise.append(_("{format} erlaubt höchstens {kante} px - Größe angepasst.").format(
+                format=name, kante=grenze))
+        return hinweise
+
+    def _transparenz_umgeschaltet(self) -> None:
+        """Merkt sich, was der Anwender wirklich wollte - nur bei echtem Klick."""
+        self.transparenz_wunsch = self.var_transparent.get()
+
+    def _groesse_begrenzen(self) -> None:
+        """Getippte Kantenlänge auf das für das Format Mögliche bringen."""
+        name = self.var_format.get()
+        grenze = MAX_KANTE
+        if name in FORMATE and FORMATE[name].max_kante:
+            grenze = FORMATE[name].max_kante
+        self._zahl_begrenzen(self.var_groesse, MIN_KANTE, grenze)
+
+    def _zahl_begrenzen(self, variable, klein: int, gross: int) -> None:
+        """Zahl in einem Eingabefeld in den erlaubten Bereich holen.
+
+        Unlesbare Eingaben bleiben stehen - dazu sagt die Statuszeile bereits
+        das Noetige, und ein stillschweigend gesetzter Wert waere schlimmer als
+        eine Meldung.
+        """
+        try:
+            wert = int(str(variable.get()).strip())
+        except (ValueError, _tk.TclError):
+            return
+        begrenzt = max(klein, min(gross, wert))
+        if begrenzt != wert:
+            variable.set(str(begrenzt) if isinstance(variable, _tk.StringVar) else begrenzt)
 
     # -- Reiter 2: Erklärungen ---------------------------------------------
 
@@ -1490,9 +1600,11 @@ class QRApp:
                              anchor="w", justify="left"),
                     bg="CARD", fg="TEXT").pack(side="left", fill="x", expand=True)
         card_text(karte, _(
-            "Verlangt ein Format eine Einstellung, die es nicht beherrscht - etwa "
-            "Transparenz bei JPEG oder mehr als 256 Pixel bei ICO -, wird die Einstellung "
-            "angepasst und in der Statuszeile erklärt."), font=FONT_TINY)
+            "Was ein Format nicht beherrscht, lässt sich gar nicht erst einstellen: "
+            "Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz ausgegraut, "
+            "und bei ICO endet die Größenauswahl bei 256 Pixeln. Ein bereits eingetragener "
+            "größerer Wert wird beim Formatwechsel heruntergesetzt und die Statuszeile "
+            "sagt es dazu."), font=FONT_TINY)
 
         karte = make_card(innen, fill="x", pady=(10, 0))
         card_title(karte, _("Fehlerkorrektur"))
@@ -1701,6 +1813,7 @@ class QRApp:
             "vordergrund": self.var_vordergrund.get(),
             "hintergrund": self.var_hintergrund.get(),
             "transparent": self.var_transparent.get(),
+            "transparenz_wunsch": self.transparenz_wunsch,
             "stapel": self.var_stapel.get(),
         }
 
@@ -1716,6 +1829,7 @@ class QRApp:
         self.var_dpi.set(gemerkt["dpi"])
         self.var_vordergrund.set(gemerkt["vordergrund"])
         self.var_hintergrund.set(gemerkt["hintergrund"])
+        self.transparenz_wunsch = gemerkt["transparenz_wunsch"]
         self.var_transparent.set(gemerkt["transparent"])
         self.var_stapel.set(gemerkt["stapel"])
 
@@ -1812,7 +1926,8 @@ class QRApp:
 
         if not text:
             self._vorschau_leeren(_("Bitte einen Inhalt eingeben."))
-            self.var_status.set(_("Bereit."))
+            self.var_status.set("   ".join(self.feld_hinweise) or _("Bereit."))
+            self.feld_hinweise = []
             return
 
         try:
@@ -1823,6 +1938,7 @@ class QRApp:
         except QRFehler as exc:
             self._vorschau_leeren()
             self.var_status.set(_("Fehler: {text}").format(text=exc))
+            self.feld_hinweise = []
             return
 
         self.ergebnis = ergebnis
@@ -1840,7 +1956,8 @@ class QRApp:
 
         # Angepasste Einstellungen zuerst - sie erklaeren, warum das Ergebnis
         # von der Eingabe abweicht; die Kontrastwarnung kommt danach.
-        meldungen = anpassungen_beschreiben(self.gewuenscht, opts)
+        meldungen = self.feld_hinweise + anpassungen_beschreiben(self.gewuenscht, opts)
+        self.feld_hinweise = []
         warnung = kontrast_warnung(opts)
         if warnung:
             meldungen.append(warnung)
@@ -1862,6 +1979,9 @@ class QRApp:
 
     def zuruecksetzen(self) -> None:
         vorgabe = QROptionen()
+        # Zuerst den gemerkten Transparenzwunsch: Das Setzen des Formats loest
+        # gleich darauf _felder_an_format_anpassen() aus, das ihn ausliest.
+        self.transparenz_wunsch = vorgabe.transparent
         self.var_format.set(vorgabe.format)
         self.var_groesse.set(str(vorgabe.groesse))
         self.var_korrektur.set(vorgabe.fehlerkorrektur)
@@ -2238,12 +2358,15 @@ TRANSLATIONS = {
             "With several lines entered and batch mode switched on, every line becomes "
             "its own code and you are asked for a target folder instead.",
         "Die Formate im Überblick": "The formats at a glance",
-        "Verlangt ein Format eine Einstellung, die es nicht beherrscht - etwa "
-        "Transparenz bei JPEG oder mehr als 256 Pixel bei ICO -, wird die Einstellung "
-        "angepasst und in der Statuszeile erklärt.":
-            "Whenever a format is asked for something it cannot do - transparency in "
-            "JPEG, say, or more than 256 pixels in ICO - the setting is adjusted and "
-            "the status line explains why.",
+        "Was ein Format nicht beherrscht, lässt sich gar nicht erst einstellen: "
+        "Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz ausgegraut, "
+        "und bei ICO endet die Größenauswahl bei 256 Pixeln. Ein bereits eingetragener "
+        "größerer Wert wird beim Formatwechsel heruntergesetzt und die Statuszeile "
+        "sagt es dazu.":
+            "What a format cannot do cannot be set in the first place: the transparency "
+            "box is greyed out for JPEG, BMP, GIF, PDF and EPS, and for ICO the size "
+            "list ends at 256 pixels. A larger value already entered is reduced when the "
+            "format changes, and the status line says so.",
         "Je höher die Stufe, desto mehr Schmutz, Knicke oder Überdeckung verträgt der "
         "Code - er braucht dafür aber mehr Module und wirkt feiner. Für Aufkleber und "
         "Aufdrucke lohnt sich Q oder H, für die Anzeige am Bildschirm genügt M.":

@@ -7,6 +7,18 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 ## [Unveröffentlicht]
 
+### Geändert
+
+- **Unmögliche Einstellungen sind in der Oberfläche nicht mehr wählbar**, statt
+  hinterher korrigiert zu werden. Bei Formaten ohne Transparenz ist das
+  Häkchen ausgegraut; der zuletzt geäußerte Wunsch bleibt gemerkt und kehrt
+  zurück, sobald wieder ein Format mit Transparenz gewählt ist. Die
+  Größenauswahl endet beim Maximum des Formats – bei ICO also bei 256 Pixeln –,
+  ein bereits eingetragener größerer Wert wird beim Formatwechsel
+  heruntergesetzt. Von Hand eingetippte Werte für Größe, Rand und Auflösung
+  werden beim Verlassen des Feldes in den erlaubten Bereich geholt, nicht
+  schon während des Tippens.
+
 ### Behoben
 
 - Die Oberfläche wies nicht darauf hin, wenn eine Einstellung angepasst werden
@@ -15,8 +27,8 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   obwohl README und der Reiter „Erklärungen" genau diesen Hinweis versprachen.
   Die Beschreibung der Anpassungen steht jetzt in `anpassungen_beschreiben()`
   und wird von der Oberfläche **und** der Kommandozeile gleichlautend benutzt.
-  Das Eingabefeld behält dabei den eingegebenen Wert; die Zeile unter der
-  Vorschau nennt die tatsächlich verwendete Größe.
+  Sie bleibt als Auffangnetz für die Kommandozeile und für den Moment zwischen
+  Tippen und Feldwechsel.
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 

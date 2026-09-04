@@ -169,8 +169,13 @@ demselben Grund beginnt auch der Speichern-Dialog im Ordner der EXE.
 | PDF  | `.pdf`  | nein | druckfertige Seite |
 | EPS  | `.eps`  | nein | klassische Druckereien |
 
-Wird für ein Format eine zu große Kantenlänge oder Transparenz verlangt, die es
-nicht kann, passt das Programm die Einstellung an und weist darauf hin.
+Was ein Format nicht beherrscht, lässt sich in der Oberfläche gar nicht erst
+einstellen: Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz
+ausgegraut, bei ICO endet die Größenauswahl bei 256 Pixeln, und eine von Hand
+eingetippte Größe wird beim Verlassen des Feldes in den erlaubten Bereich
+geholt. Wo doch einmal etwas angepasst werden muss – beim Formatwechsel oder
+auf der Kommandozeile – sagt die Statuszeile beziehungsweise die Ausgabe es
+dazu.
 
 ## Größen
 
