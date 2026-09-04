@@ -7,6 +7,10 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 ## [Unveröffentlicht]
 
+<!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
+
+## [1.1.1] – 2026-09-04
+
 ### Geändert
 
 - **Unmögliche Einstellungen sind in der Oberfläche nicht mehr wählbar**, statt
@@ -29,8 +33,6 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   und wird von der Oberfläche **und** der Kommandozeile gleichlautend benutzt.
   Sie bleibt als Auffangnetz für die Kommandozeile und für den Moment zwischen
   Tippen und Feldwechsel.
-
-<!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
 ## [1.1] – 2026-09-04
 

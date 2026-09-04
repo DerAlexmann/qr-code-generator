@@ -1,5 +1,5 @@
 """
-QR-Code-Generator 1.1 - QR-Codes aus Text erzeugen und als Bild speichern
+QR-Code-Generator 1.1.1 - QR-Codes aus Text erzeugen und als Bild speichern
 
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.
@@ -55,7 +55,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 
 PROGRAMM = "QR-Code-Generator"
-VERSION = "1.1"
+VERSION = "1.1.1"
 
 
 # --------------------------------------------------------------------------
