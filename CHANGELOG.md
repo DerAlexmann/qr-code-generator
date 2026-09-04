@@ -7,6 +7,17 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 ## [Unveröffentlicht]
 
+### Behoben
+
+- Die Oberfläche wies nicht darauf hin, wenn eine Einstellung angepasst werden
+  musste – etwa ICO auf 256 Pixel begrenzt oder Transparenz bei GIF und JPEG
+  weggelassen. Die Ausgabedatei war korrekt, aber die Statuszeile schwieg dazu,
+  obwohl README und der Reiter „Erklärungen" genau diesen Hinweis versprachen.
+  Die Beschreibung der Anpassungen steht jetzt in `anpassungen_beschreiben()`
+  und wird von der Oberfläche **und** der Kommandozeile gleichlautend benutzt.
+  Das Eingabefeld behält dabei den eingegebenen Wert; die Zeile unter der
+  Vorschau nennt die tatsächlich verwendete Größe.
+
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
 ## [1.1] – 2026-09-04

@@ -421,6 +421,24 @@ def optionen_pruefen(opts: QROptionen) -> QROptionen:
     return replace(opts, groesse=groesse, transparent=opts.transparent and info.alpha)
 
 
+def anpassungen_beschreiben(gewuenscht: QROptionen, geprueft: QROptionen) -> list[str]:
+    """Nennt, was optionen_pruefen() am Wunsch des Anwenders anpassen musste.
+
+    optionen_pruefen() begrenzt stillschweigend aufs Machbare - ein ICO wird
+    nie groesser als 256 Pixel, ein GIF nie durchsichtig. Damit Oberflaeche und
+    Kommandozeile das gleichlautend erklaeren koennen, steht die Beschreibung
+    hier an einer einzigen Stelle.
+    """
+    hinweise = []
+    if gewuenscht.groesse != geprueft.groesse:
+        hinweise.append(_("{format} erlaubt höchstens {kante} px - Größe angepasst.").format(
+            format=geprueft.format, kante=geprueft.groesse))
+    if gewuenscht.transparent and not geprueft.transparent:
+        hinweise.append(_("{format} kennt keine Transparenz - Hintergrund wird gefüllt.").format(
+            format=geprueft.format))
+    return hinweise
+
+
 def kontrast_warnung(opts: QROptionen) -> str | None:
     """Warnt, wenn Vorder- und Hintergrund zu aehnlich zum Scannen sind."""
     vg = farbe_pruefen(opts.vordergrund, "Vordergrundfarbe")
@@ -825,7 +843,7 @@ def cli_main(args: argparse.Namespace) -> int:
 
     endungsformat = format_aus_pfad(args.ausgabe) if args.ausgabe else None
     formatname = args.format or endungsformat or "PNG"
-    opts = QROptionen(
+    gewuenscht = QROptionen(
         format=formatname,
         groesse=args.groesse,
         fehlerkorrektur=args.fehlerkorrektur,
@@ -837,21 +855,17 @@ def cli_main(args: argparse.Namespace) -> int:
         dpi=args.dpi,
         qualitaet=args.qualitaet,
     )
-    opts = optionen_pruefen(opts)
+    opts = optionen_pruefen(gewuenscht)
 
     def melden(zeile: str) -> None:
         if not args.still:
             print(zeile)
 
-    if args.groesse != opts.groesse:
-        melden(_("Hinweis: {format} erlaubt höchstens {kante} px - Größe angepasst.").format(
-            format=opts.format, kante=opts.groesse))
+    for hinweis in anpassungen_beschreiben(gewuenscht, opts):
+        melden(_("Hinweis: {text}").format(text=hinweis))
     if endungsformat and args.format and endungsformat != args.format:
         melden(_("Hinweis: --format {format} hat Vorrang vor der Endung der Zieldatei "
                  "({endung}).").format(format=args.format, endung=endungsformat))
-    if args.transparent and not opts.transparent:
-        melden(_("Hinweis: {format} kennt keine Transparenz - Hintergrund wird gefüllt.").format(
-            format=opts.format))
     warnung = kontrast_warnung(opts)
     if warnung:
         melden(_("Hinweis: {text}").format(text=warnung))
@@ -1075,6 +1089,7 @@ class QRApp:
     def __init__(self, master, start: QROptionen | None = None, starttext: str = "") -> None:
         self.master = master
         self.opts = start or QROptionen()
+        self.gewuenscht = self.opts          # ungeprueft, fuer den Vergleich
         self.ergebnis: QRErgebnis | None = None
         self.vorschau_bild = None            # Referenz halten, sonst verschwindet sie
         self.nachlauf = None                 # laufender after()-Auftrag
@@ -1742,7 +1757,12 @@ class QRApp:
         return [z.strip() for z in self.eingabe.get("1.0", "end-1c").splitlines() if z.strip()]
 
     def optionen_holen(self) -> QROptionen:
-        """Liest die Eingabefelder und liefert geprüfte Optionen."""
+        """Liest die Eingabefelder und liefert geprüfte Optionen.
+
+        Der ungepruefte Wunsch bleibt in self.gewuenscht stehen. Nur so kann
+        _neu_zeichnen() erklaeren, was optionen_pruefen() anpassen musste -
+        etwa die Groesse bei ICO oder die Transparenz bei GIF.
+        """
         try:
             groesse = int(str(self.var_groesse.get()).strip())
         except ValueError as exc:
@@ -1752,7 +1772,7 @@ class QRApp:
         except (ValueError, _tk.TclError) as exc:
             raise QRFehler(_("Rand und DPI müssen ganze Zahlen sein.")) from exc
 
-        return optionen_pruefen(QROptionen(
+        self.gewuenscht = QROptionen(
             format=self.var_format.get(),
             groesse=groesse,
             fehlerkorrektur=self.var_korrektur.get(),
@@ -1761,7 +1781,8 @@ class QRApp:
             hintergrund=self.var_hintergrund.get(),
             transparent=self.var_transparent.get(),
             dpi=dpi,
-        ))
+        )
+        return optionen_pruefen(self.gewuenscht)
 
     # -- Vorschau ----------------------------------------------------------
 
@@ -1816,7 +1837,14 @@ class QRApp:
             "Version {version}  |  {module} Module  |  {kante} px  |  {zeichen} Zeichen").format(
                 version=ergebnis.version, module=ergebnis.module,
                 kante=opts.groesse, zeichen=ergebnis.zeichen))
-        self.var_status.set(kontrast_warnung(opts) or _("Bereit."))
+
+        # Angepasste Einstellungen zuerst - sie erklaeren, warum das Ergebnis
+        # von der Eingabe abweicht; die Kontrastwarnung kommt danach.
+        meldungen = anpassungen_beschreiben(self.gewuenscht, opts)
+        warnung = kontrast_warnung(opts)
+        if warnung:
+            meldungen.append(warnung)
+        self.var_status.set("   ".join(meldungen) if meldungen else _("Bereit."))
 
     def _auf_karo(self, bild):
         """Legt das Bild auf ein Schachbrett, damit Transparenz sichtbar wird."""
@@ -2369,13 +2397,13 @@ TRANSLATIONS = {
         "keine Statusmeldungen ausgeben": "print no status messages",
         "unterstützte Formate": "supported formats",
         "(max. {kante} px)": "({kante} px max.)",
-        "Hinweis: {format} erlaubt höchstens {kante} px - Größe angepasst.":
-            "Note: {format} allows {kante} px at most - size adjusted.",
+        "{format} erlaubt höchstens {kante} px - Größe angepasst.":
+            "{format} allows {kante} px at most - size adjusted.",
         "Hinweis: --format {format} hat Vorrang vor der Endung der Zieldatei ({endung}).":
             "Note: --format {format} takes precedence over the target file's extension "
             "({endung}).",
-        "Hinweis: {format} kennt keine Transparenz - Hintergrund wird gefüllt.":
-            "Note: {format} has no transparency - the background is filled in.",
+        "{format} kennt keine Transparenz - Hintergrund wird gefüllt.":
+            "{format} has no transparency - the background is filled in.",
         "(Version {version}, {module} Module)": "(version {version}, {module} modules)",
         "Fertig: {gut} von {gesamt} Dateien geschrieben.":
             "Done: wrote {gut} of {gesamt} files.",
