@@ -1,0 +1,69 @@
+# --------------------------------------------------------------------------
+# Vom QR-Code-Generator selbst erzeugte Dateien
+# --------------------------------------------------------------------------
+qr-code-generator.json
+
+# Beim Ausprobieren erzeugte QR-Codes im Projektordner
+*.png
+*.svg
+*.webp
+*.tif
+*.tiff
+*.bmp
+*.gif
+*.ico
+*.eps
+!docs/screenshots/*.png
+
+# --------------------------------------------------------------------------
+# Python
+# --------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.spec
+
+# Virtuelle Umgebungen
+.venv/
+venv/
+env/
+ENV/
+
+# Test- und Linter-Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --------------------------------------------------------------------------
+# Editoren / IDEs
+# --------------------------------------------------------------------------
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+
+# --------------------------------------------------------------------------
+# Betriebssysteme
+# --------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# --------------------------------------------------------------------------
+# Lokale Arbeitsnotizen zur Veroeffentlichung - gehoeren nicht ins Repository
+# --------------------------------------------------------------------------
+_VEROEFFENTLICHEN.md

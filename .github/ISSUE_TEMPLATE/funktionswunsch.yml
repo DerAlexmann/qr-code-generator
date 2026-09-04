@@ -1,0 +1,57 @@
+name: Funktionswunsch / Feature request
+description: Ein Vorschlag, was das Programm zusätzlich können sollte.
+title: "[Wunsch]: "
+labels: ["funktionswunsch"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Vorschlag! Bitte kurz schildern, worum es geht und wobei
+        es helfen würde.
+
+        *Thanks for the suggestion. German or English are both fine.*
+
+  - type: checkboxes
+    id: vorab
+    attributes:
+      label: Vorab
+      options:
+        - label: Ich habe geprüft, ob es dazu schon ein offenes Issue gibt.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Worum geht es?
+      description: >
+        Welche Aufgabe lässt sich heute nicht oder nur umständlich erledigen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: vorschlag
+    attributes:
+      label: Wie könnte es aussehen?
+      description: Eine mögliche Lösung, gern mit Skizze oder Beispiel.
+
+  - type: textarea
+    id: alternativen
+    attributes:
+      label: Behelfslösungen
+      description: Wie lösen Sie das heute – etwa über die Kommandozeile?
+
+  - type: dropdown
+    id: bereich
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Erzeugung der QR-Codes
+        - Ausgabeformate
+        - Oberfläche
+        - Stapelverarbeitung
+        - Kommandozeile
+        - Sprache / Farbschema
+        - Dokumentation
+        - Sonstiges
+    validations:
+      required: true

@@ -1,0 +1,96 @@
+name: Release
+
+# Baut bei einem Versions-Tag (z. B. v1.1) eine Windows-EXE und ein
+# plattformunabhaengiges ZIP und haengt beides an einen GitHub-Release.
+#
+# Die EXE entsteht im --onefile-Modus. Damit Sprache und Farbschema einen
+# Neustart ueberleben, erkennt programm_ordner() in qr_generator.py den
+# gepackten Zustand (sys.frozen) und legt die Einstellungen neben der EXE ab
+# statt in dem temporaeren Entpackordner, den PyInstaller bei jedem Start
+# anlegt und beim Beenden wieder loescht.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  quellpaket:
+    name: Quellpaket (ZIP)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ZIP packen
+        run: |
+          mkdir -p out/QR-Code-Generator
+          cp qr_generator.py QR-Code-Generator.pyw README.md README.en.md \
+             LICENSE NOTICE CHANGELOG.md requirements.txt out/QR-Code-Generator/
+          cd out && zip -r "QR-Code-Generator-${GITHUB_REF_NAME}-quellen.zip" QR-Code-Generator
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: quellpaket
+          path: out/*.zip
+
+  windows-exe:
+    name: Windows-EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Abhaengigkeiten installieren
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      # --copy-metadata qrcode nimmt die Paketdaten mit. qrcode fuehrt seit
+      # Fassung 8 kein __version__ mehr; ohne die Metadaten stuende im Reiter
+      # "Info & Copyright" statt der Versionsnummer nur "eingebettet".
+      # --windowed unterdrueckt das Konsolenfenster hinter der Oberflaeche.
+      - name: EXE bauen
+        run: >
+          pyinstaller --noconfirm --onefile --windowed
+          --name "QR-Code-Generator"
+          --copy-metadata qrcode
+          qr_generator.py
+
+      - name: Startet die EXE ueberhaupt?
+        # Ein reiner Rauchtest: die EXE wird gestartet und nach wenigen
+        # Sekunden beendet. Faellt sie sofort um, schlaegt der Job fehl.
+        run: |
+          $p = Start-Process -FilePath "dist\QR-Code-Generator.exe" -PassThru
+          Start-Sleep -Seconds 20
+          if ($p.HasExited) { throw "Die EXE hat sich sofort beendet (Exit $($p.ExitCode))." }
+          Stop-Process -Id $p.Id -Force
+          Write-Output "EXE laeuft."
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-exe
+          path: dist/QR-Code-Generator.exe
+
+  release:
+    name: Release veroeffentlichen
+    needs: [quellpaket, windows-exe]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artefakte
+
+      - name: Release anlegen
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true          # erst pruefen, dann von Hand veroeffentlichen
+          generate_release_notes: true
+          files: |
+            artefakte/quellpaket/*.zip
+            artefakte/windows-exe/QR-Code-Generator.exe

@@ -1,0 +1,4 @@
+# Pflichtabhängigkeiten / required dependencies
+# Ohne diese beiden Pakete startet der QR-Code-Generator nicht.
+qrcode>=7.4
+Pillow>=9.1

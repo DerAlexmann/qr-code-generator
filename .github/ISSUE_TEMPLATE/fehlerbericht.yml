@@ -1,0 +1,103 @@
+name: Fehlerbericht / Bug report
+description: Etwas funktioniert nicht wie erwartet.
+title: "[Fehler]: "
+labels: ["fehler"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für die Meldung! Bitte so viel wie möglich ausfüllen – je genauer,
+        desto schneller lässt sich der Fehler nachstellen.
+
+        *Thanks for reporting. German or English are both fine.*
+
+  - type: checkboxes
+    id: vorab
+    attributes:
+      label: Vorab
+      options:
+        - label: Ich habe geprüft, ob es dazu schon ein offenes Issue gibt.
+          required: true
+        - label: Ich benutze die aktuelle Version aus dem Repository.
+          required: true
+
+  - type: dropdown
+    id: bereich
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Reiter "QR-Code" (Eingabe, Einstellungen, Vorschau)
+        - Speichern einzelner Codes
+        - Stapelverarbeitung
+        - Reiter "Erklärungen"
+        - Reiter "Info & Copyright"
+        - Sprache / Farbschema
+        - Kommandozeile
+        - Gebündelte EXE
+        - Weiß ich nicht / betrifft alles
+    validations:
+      required: true
+
+  - type: textarea
+    id: beschreibung
+    attributes:
+      label: Was passiert?
+      description: Was ist schiefgegangen – und was hätten Sie stattdessen erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Schritte zum Nachstellen
+      placeholder: |
+        1. Programm starten
+        2. "https://example.org" eingeben
+        3. Format ICO und Größe 1024 wählen
+        4. Auf "Speichern unter ..." klicken
+        5. Fehler erscheint
+    validations:
+      required: true
+
+  - type: textarea
+    id: inhalt
+    attributes:
+      label: Inhalt des QR-Codes
+      description: >
+        Falls der Fehler von einem bestimmten Inhalt abhängt, diesen bitte hier
+        einfügen – gern gekürzt oder mit Platzhaltern, wenn er privat ist.
+      render: text
+
+  - type: textarea
+    id: einstellungen
+    attributes:
+      label: Einstellungen
+      description: >
+        Format, Größe, Fehlerkorrektur, Rand, Farben und ob Transparenz aktiv
+        war. Die Zeile unter der Vorschau nennt Version, Modulzahl und Größe.
+      placeholder: "PNG, 1024 px, Fehlerkorrektur Q, Rand 4, schwarz auf weiß"
+
+  - type: input
+    id: version
+    attributes:
+      label: Version des QR-Code-Generators
+      placeholder: "1.1"
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: Betriebssystem und Python-Version
+      description: Bei der EXE genügt das Betriebssystem.
+      placeholder: "Windows 11, Python 3.12.4"
+    validations:
+      required: true
+
+  - type: textarea
+    id: bibliotheken
+    attributes:
+      label: Bibliotheken
+      description: >
+        Der Reiter „Info & Copyright" nennt die Versionen von qrcode, Pillow
+        und Tk. Alternativ die Ausgabe von `pip list` einfügen.

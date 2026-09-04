@@ -1,0 +1,34 @@
+# --------------------------------------------------------------------------
+# Der QR-Code-Generator ist ein einzelnes ausfuehrbares Skript und kein
+# installierbares Paket - diese Datei enthaelt deshalb bewusst nur
+# Werkzeug-Konfiguration (Linter) und keinen [project]-Abschnitt.
+# --------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle - Fehler
+    "W",    # pycodestyle - Warnungen
+    "F",    # Pyflakes
+    "I",    # isort - Importreihenfolge
+    "B",    # flake8-bugbear - typische Fallstricke
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade - veraltete Schreibweisen
+    "RET",  # flake8-return
+]
+ignore = [
+    # Die Farbnamen (BG, CARD, TEXT ...) werden von apply_theme() zur Laufzeit
+    # per globals().update() angelegt - genau wie in der Bild-Toolbox. Das ist
+    # beabsichtigt und macht das Umschalten des Farbschemas moeglich; statische
+    # Analyse kann es nicht sehen, deshalb waeren es sonst ueber hundert
+    # Fehlalarme. Dasselbe gilt fuer _tk, _ttk und _ImageTk, die gui_starten()
+    # erst beim Start belegt, damit die Kommandozeile ohne Tkinter auskommt.
+    "F821",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]

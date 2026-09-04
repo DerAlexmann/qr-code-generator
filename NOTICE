@@ -1,0 +1,51 @@
+QR-Code-Generator
+Copyright (c) 2026 Alexander Unverhau
+Created with assistance of Claude AI (Anthropic)
+
+Licensed under the MIT License. The full license text is in the file LICENSE
+next to this one; this file adds no conditions of its own.
+
+
+Hinweis zur Entstehung
+----------------------
+
+Der QR-Code-Generator ist in Zusammenarbeit mit Claude AI (Anthropic)
+entstanden. Dieser Hinweis steht der Transparenz halber überall dort, wo auch
+der Copyright-Vermerk steht: im Kopf von qr_generator.py und
+QR-Code-Generator.pyw, im Reiter "Info & Copyright" der Anwendung, in dieser
+Datei sowie in README.md und README.en.md.
+
+An den Bedingungen der MIT-Lizenz ändert er nichts. Das Urheberrecht liegt bei
+Alexander Unverhau.
+
+
+Note on authorship
+------------------
+
+The QR-Code-Generator was created with assistance of Claude AI (Anthropic).
+For transparency, this note appears everywhere the copyright notice does: in
+the headers of qr_generator.py and QR-Code-Generator.pyw, in the application's
+"About & copyright" tab, in this file, and in README.md and README.en.md.
+
+It does not change the terms of the MIT License in any way. The copyright
+remains with Alexander Unverhau.
+
+
+Verwendete Bibliotheken / Third-party components
+------------------------------------------------
+
+qrcode - BSD 3-Clause License
+    Kodiert den Inhalt als QR-Matrix.
+    https://github.com/lincolnloop/python-qrcode
+
+Pillow - MIT-CMU License
+    Zeichnet und speichert die Bilddateien.
+    https://python-pillow.org/
+
+Tkinter / Tcl-Tk - Tcl/Tk License (BSD-artig)
+    Stellt die Oberfläche dar; Bestandteil der Python-Standardinstallation.
+    https://www.tcl.tk/
+
+In der gebündelten EXE sind diese Bibliotheken enthalten. Ihre jeweiligen
+Lizenzbedingungen gelten unverändert fort; die hier genannten Namen und
+Fundstellen dienen der Nachvollziehbarkeit.

@@ -1,0 +1,56 @@
+name: Übersetzung / Translation
+description: Eine neue Sprache beitragen oder einen Text verbessern.
+title: "[Sprache]: "
+labels: ["übersetzung"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Quellsprache ist Deutsch: Der deutsche Text im Code ist zugleich der
+        Schlüssel. Eine Sprache kommt über je einen Eintrag in `LANGUAGE_NAMES`
+        und `TRANSLATIONS` am Ende von `qr_generator.py` dazu. Nicht übersetzte
+        Zeilen erscheinen weiterhin auf Deutsch – eine unvollständige Tabelle
+        ist also unproblematisch.
+
+        *The source language is German; the German string in the code is the
+        lookup key. Partial translations are fine.*
+
+  - type: dropdown
+    id: art
+    attributes:
+      label: Worum geht es?
+      options:
+        - Neue Sprache
+        - Korrektur an einer vorhandenen Übersetzung
+        - Verbesserung eines deutschen Textes
+    validations:
+      required: true
+
+  - type: input
+    id: sprache
+    attributes:
+      label: Sprache
+      placeholder: "Französisch (fr)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: text
+    attributes:
+      label: Vorschlag
+      description: >
+        Bei einer Korrektur bitte den bisherigen und den vorgeschlagenen Text
+        angeben. Platzhalter in geschweiften Klammern – {pfad}, {format},
+        {fehler} … – müssen unverändert vorkommen; ihre Reihenfolge im Satz ist
+        frei.
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: hinweise
+    attributes:
+      label: Hinweise
+      options:
+        - label: Die Platzhalter in geschweiften Klammern sind unverändert übernommen.
+        - label: Mir ist bewusst, dass sehr lange Texte das Fenster verbreitern können.
