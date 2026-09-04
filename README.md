@@ -173,9 +173,10 @@ Was ein Format nicht beherrscht, lässt sich in der Oberfläche gar nicht erst
 einstellen: Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz
 ausgegraut, bei ICO endet die Größenauswahl bei 256 Pixeln, und eine von Hand
 eingetippte Größe wird beim Verlassen des Feldes in den erlaubten Bereich
-geholt. Wo doch einmal etwas angepasst werden muss – beim Formatwechsel oder
-auf der Kommandozeile – sagt die Statuszeile beziehungsweise die Ausgabe es
-dazu.
+geholt. Die Felder zeigen damit immer das, was tatsächlich gespeichert wird.
+
+Auf der Kommandozeile gibt es keine Felder, die das verhindern könnten – dort
+meldet die Ausgabe eine Anpassung, etwa bei `-f ICO -s 1024`.
 
 ## Größen
 

@@ -169,8 +169,10 @@ save dialog starts in the folder holding the EXE.
 What a format cannot do cannot be set in the first place: the transparency box
 is greyed out for JPEG, BMP, GIF, PDF and EPS, for ICO the size list ends at
 256 pixels, and a size typed by hand is brought into the allowed range when you
-leave the field. Where something does have to be adjusted after all – on a
-format change or on the command line – the status line or the output says so.
+leave the field. The fields therefore always show what actually gets saved.
+
+The command line has no fields to prevent it – there the output reports an
+adjustment, for instance with `-f ICO -s 1024`.
 
 ## Sizes
 

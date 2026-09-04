@@ -1603,8 +1603,8 @@ class QRApp:
             "Was ein Format nicht beherrscht, lässt sich gar nicht erst einstellen: "
             "Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz ausgegraut, "
             "und bei ICO endet die Größenauswahl bei 256 Pixeln. Ein bereits eingetragener "
-            "größerer Wert wird beim Formatwechsel heruntergesetzt und die Statuszeile "
-            "sagt es dazu."), font=FONT_TINY)
+            "größerer Wert wird beim Formatwechsel heruntergesetzt. Die Felder zeigen "
+            "damit immer das, was tatsächlich gespeichert wird."), font=FONT_TINY)
 
         karte = make_card(innen, fill="x", pady=(10, 0))
         card_title(karte, _("Fehlerkorrektur"))
@@ -2361,12 +2361,12 @@ TRANSLATIONS = {
         "Was ein Format nicht beherrscht, lässt sich gar nicht erst einstellen: "
         "Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz ausgegraut, "
         "und bei ICO endet die Größenauswahl bei 256 Pixeln. Ein bereits eingetragener "
-        "größerer Wert wird beim Formatwechsel heruntergesetzt und die Statuszeile "
-        "sagt es dazu.":
+        "größerer Wert wird beim Formatwechsel heruntergesetzt. Die Felder zeigen "
+        "damit immer das, was tatsächlich gespeichert wird.":
             "What a format cannot do cannot be set in the first place: the transparency "
             "box is greyed out for JPEG, BMP, GIF, PDF and EPS, and for ICO the size "
             "list ends at 256 pixels. A larger value already entered is reduced when the "
-            "format changes, and the status line says so.",
+            "format changes. The fields therefore always show what actually gets saved.",
         "Je höher die Stufe, desto mehr Schmutz, Knicke oder Überdeckung verträgt der "
         "Code - er braucht dafür aber mehr Module und wirkt feiner. Für Aufkleber und "
         "Aufdrucke lohnt sich Q oder H, für die Anzeige am Bildschirm genügt M.":
