@@ -63,8 +63,10 @@ jobs:
           python -m py_compile qr_generator.py
           python -m py_compile QR-Code-Generator.pyw
 
+      # -rs nennt den Grund jedes uebersprungenen Tests. Ohne das steht im
+      # Protokoll nur "1 skipped", und man raet, welcher es war.
       - name: Tests
-        run: python -m pytest
+        run: python -m pytest -rs
 
   kommandozeile:
     name: Kommandozeile erzeugt alle Formate
