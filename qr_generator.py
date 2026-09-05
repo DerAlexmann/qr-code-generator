@@ -1,5 +1,5 @@
 """
-QR-Code-Generator 1.1.1 - QR-Codes aus Text erzeugen und als Bild speichern
+QR-Code-Generator 1.1.2 - QR-Codes aus Text erzeugen und als Bild speichern
 
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.
@@ -55,7 +55,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 
 PROGRAMM = "QR-Code-Generator"
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 
 # --------------------------------------------------------------------------
@@ -1922,7 +1922,14 @@ class QRApp:
 
     def _neu_zeichnen(self) -> None:
         self.nachlauf = None
-        text = self._zeilen_holen()[0] if self.var_stapel.get() else self._text_holen()
+        if self.var_stapel.get():
+            # Im Stapelmodus zeigt die Vorschau die erste Zeile. _zeilen_holen()
+            # laesst Leerzeilen weg und kann deshalb leer ausgehen - bei leerem
+            # Feld ebenso wie bei reinem Leerraum.
+            zeilen = self._zeilen_holen()
+            text = zeilen[0] if zeilen else ""
+        else:
+            text = self._text_holen()
 
         if not text:
             self._vorschau_leeren(_("Bitte einen Inhalt eingeben."))

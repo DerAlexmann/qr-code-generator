@@ -9,6 +9,18 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.2] – 2026-09-05
+
+### Behoben
+
+- **Absturz beim Einschalten des Stapelmodus mit leerem Eingabefeld.** Die
+  Vorschau griff auf die erste Zeile zu, ohne zu prüfen, ob es überhaupt eine
+  gibt: `_zeilen_holen()` lässt Leerzeilen weg und liefert bei leerem Feld oder
+  reinem Leerraum eine leere Liste. Das Ergebnis war ein `IndexError` im
+  Tkinter-Rückruf. Betroffen war jeder Weg dorthin – Häkchen bei leerem Feld
+  setzen, den Text bei gesetztem Häkchen löschen oder nur Leerzeilen eingeben.
+  Die Vorschau bleibt in diesen Fällen jetzt einfach leer.
+
 ## [1.1.1] – 2026-09-04
 
 ### Geändert
