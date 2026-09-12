@@ -9,6 +9,8 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.3] – 2026-09-12
+
 ### Behoben
 
 - **Das Fenster springt beim Start nicht mehr über den Bildschirm.** Beim
@@ -17,13 +19,19 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   Standardposition an, und erst danach wurde es in die Mitte gesetzt. Jetzt
   bleibt es verborgen, bis es fertig aufgebaut und platziert ist, und erscheint
   gleich an der richtigen Stelle.
+- **Nach einem Sprachwechsel bleibt das Fenster, wo es ist.** Der Neuaufbau
+  benutzte dieselbe Einpassung wie der Start und setzte ein beiseitegeschobenes
+  Fenster zurück in die Mitte. Jetzt behält es seine Position. Nur wenn es mit
+  der neuen Größe über den Bildschirmrand ragen würde, rückt es gerade so weit
+  herein; die Titelleiste bleibt dabei immer erreichbar.
 
 ### Geändert
 
 - **Das Fenster öffnet sich auf dem Monitor, auf dem der Mauszeiger steht.**
   Bisher entschied darüber, wo Windows das noch unfertige Fenster abgelegt
   hatte. Ein verborgenes Fenster liegt aber noch auf keinem Monitor, deshalb
-  zählt jetzt die Stelle, an der doppelgeklickt wurde. Mit nur einem
+  zählt jetzt die Stelle, an der doppelgeklickt wurde. Beim Sprachwechsel
+  zählt der Monitor, auf dem das Fenster gerade liegt. Mit nur einem
   Bildschirm ändert sich nichts.
 
 ## [1.1.2] – 2026-09-05

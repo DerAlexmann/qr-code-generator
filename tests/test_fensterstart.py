@@ -4,6 +4,9 @@ Hintergrund: Beim Aufbau ruft die Oberflaeche update_idletasks() auf, um
 Groessen zu messen. Dabei zeigte Windows das Fenster schon an seiner
 Standardposition an; erst danach setzte geometry() die Mitte, und das Fenster
 sprang sichtbar ueber den Bildschirm.
+
+Ebenso sprang ein verschobenes Fenster nach einem Sprachwechsel zurueck in
+die Mitte, weil der Neuaufbau dieselbe Einpassung wie der Start benutzte.
 """
 
 import pytest
@@ -70,3 +73,37 @@ def test_sprachwechsel_laesst_das_fenster_sichtbar(qr, wurzel):
     wurzel.update()
     assert wurzel.state() == "normal"
     assert app.eingabe.get("1.0", "end-1c") == "https://example.org"
+
+
+def test_sprachwechsel_behaelt_die_position(qr, wurzel):
+    """Ein beiseitegeschobenes Fenster bleibt nach dem Sprachwechsel, wo es ist."""
+    app = qr.QRApp(wurzel, qr.QROptionen(), "https://example.org")
+    rand_x, rand_y, _breite, _hoehe = app.arbeitsflaeche
+    wurzel.geometry(f"+{rand_x + 40}+{rand_y + 30}")
+    wurzel.update()
+    vorher = (wurzel.winfo_x(), wurzel.winfo_y())
+
+    app._neu_aufbauen()
+    wurzel.update()
+    assert (wurzel.winfo_x(), wurzel.winfo_y()) == vorher
+
+
+@pytest.mark.parametrize("ecke", ["rechts unten", "links oben"])
+def test_sprachwechsel_holt_das_fenster_auf_den_bildschirm(qr, wurzel, ecke):
+    """Ragt das Fenster über den Rand, rückt es gerade so weit herein."""
+    app = qr.QRApp(wurzel, qr.QROptionen(), "https://example.org")
+    rand_x, rand_y, breite, hoehe = app.arbeitsflaeche
+    if ecke == "rechts unten":
+        wurzel.geometry(f"+{rand_x + breite - 120}+{rand_y + hoehe - 90}")
+    else:
+        wurzel.geometry(f"+{rand_x - 200}+{rand_y - 150}")
+    wurzel.update()
+
+    app._neu_aufbauen()
+    wurzel.update()
+    # Aussenmasse samt Rahmen: die Innenflaeche plus der Abstand zum Rahmen
+    links = wurzel.winfo_rootx() - wurzel.winfo_x()
+    oben = wurzel.winfo_rooty() - wurzel.winfo_y()
+    assert wurzel.winfo_x() >= rand_x and wurzel.winfo_y() >= rand_y
+    assert wurzel.winfo_x() + wurzel.winfo_width() + 2 * links <= rand_x + breite
+    assert wurzel.winfo_y() + wurzel.winfo_height() + oben + links <= rand_y + hoehe

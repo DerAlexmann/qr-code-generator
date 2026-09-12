@@ -1,5 +1,5 @@
 """
-QR-Code-Generator 1.1.2 - QR-Codes aus Text erzeugen und als Bild speichern
+QR-Code-Generator 1.1.3 - QR-Codes aus Text erzeugen und als Bild speichern
 
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.
@@ -55,7 +55,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 
 PROGRAMM = "QR-Code-Generator"
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 
 # --------------------------------------------------------------------------
@@ -1137,9 +1137,10 @@ class QRApp:
         der Naht zwischen zwei Monitoren. Unter Windows liefert GetMonitorInfo
         deshalb den tatsaechlichen Arbeitsbereich ohne Taskleiste.
 
-        Das Fenster ist hier noch verborgen und liegt auf keinem Monitor.
-        Massgeblich ist deshalb der Mauszeiger - er steht dort, wo eben
-        doppelgeklickt wurde.
+        Beim Start ist das Fenster noch verborgen und liegt auf keinem Monitor.
+        Massgeblich ist dann der Mauszeiger - er steht dort, wo eben
+        doppelgeklickt wurde. Beim Neuaufbau nach einem Sprachwechsel ist das
+        Fenster sichtbar; dann zaehlt der Monitor, auf den es geschoben wurde.
         """
         if sys.platform == "win32":
             try:
@@ -1151,9 +1152,13 @@ class QRApp:
                                 ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
 
                 benutzer = ctypes.windll.user32
-                zeiger = wintypes.POINT()                # bleibt 0,0, falls die Abfrage scheitert
-                benutzer.GetCursorPos(ctypes.byref(zeiger))
-                monitor = benutzer.MonitorFromPoint(zeiger, 2)       # naechstgelegener Monitor
+                if self.master.winfo_ismapped():
+                    fenster = benutzer.GetParent(self.master.winfo_id()) or self.master.winfo_id()
+                    monitor = benutzer.MonitorFromWindow(fenster, 2)     # naechstgelegener Monitor
+                else:
+                    zeiger = wintypes.POINT()            # bleibt 0,0, falls die Abfrage scheitert
+                    benutzer.GetCursorPos(ctypes.byref(zeiger))
+                    monitor = benutzer.MonitorFromPoint(zeiger, 2)
                 info = MONITORINFO()
                 info.cbSize = ctypes.sizeof(MONITORINFO)
                 if benutzer.GetMonitorInfoW(monitor, ctypes.byref(info)):
@@ -1164,13 +1169,17 @@ class QRApp:
                 pass
         return (0, 0, self.master.winfo_screenwidth(), self.master.winfo_screenheight())
 
-    def _fenster_einpassen(self) -> None:
+    def _fenster_einpassen(self, position_behalten: bool = False) -> None:
         """Fenster auf feste Größe setzen und vollständig auf den Monitor legen.
 
         Die noetige Groesse haengt von der Schriftgroesse und damit von der
         Windows-Skalierung ab, deshalb wird sie berechnet statt fest eingetragen.
         Passt der Inhalt ausnahmsweise nicht auf den Bildschirm, bleibt das
         Fenster veraenderbar - sonst waere es nicht mehr zu bedienen.
+
+        Beim Start wird das Fenster zentriert. Nach einem Sprachwechsel bleibt
+        es dort, wo es hingeschoben wurde; nur wenn es mit der neuen Groesse
+        ueber den Rand ragen wuerde, rueckt es gerade so weit herein.
         """
         self.master.update_idletasks()
         rand_x, rand_y, platz_breite, platz_hoehe = self.arbeitsflaeche
@@ -1178,8 +1187,19 @@ class QRApp:
 
         passt = breite <= platz_breite and hoehe <= platz_hoehe
         breite, hoehe = min(breite, platz_breite), min(hoehe, platz_hoehe)
-        x = rand_x + max(0, (platz_breite - breite) // 2)
-        y = rand_y + max(0, (platz_hoehe - hoehe) // 3)
+        if position_behalten:
+            # geometry() setzt die Innengroesse, die Position gilt aber fuer
+            # den Rahmen. Seine Staerke steckt im Abstand zwischen beiden;
+            # rechts und unten ist er so breit wie links.
+            links = max(0, self.master.winfo_rootx() - self.master.winfo_x())
+            oben = max(0, self.master.winfo_rooty() - self.master.winfo_y())
+            ganz_breit, ganz_hoch = breite + 2 * links, hoehe + oben + links
+            # Die linke obere Ecke gewinnt: Die Titelleiste muss erreichbar bleiben.
+            x = max(rand_x, min(self.master.winfo_x(), rand_x + platz_breite - ganz_breit))
+            y = max(rand_y, min(self.master.winfo_y(), rand_y + platz_hoehe - ganz_hoch))
+        else:
+            x = rand_x + max(0, (platz_breite - breite) // 2)
+            y = rand_y + max(0, (platz_hoehe - hoehe) // 3)
 
         self.master.geometry(f"{breite}x{hoehe}+{x}+{y}")
         self.master.resizable(not passt, not passt)
@@ -1827,6 +1847,8 @@ class QRApp:
             "stapel": self.var_stapel.get(),
         }
 
+        # Das Fenster kann inzwischen auf einem anderen Monitor liegen.
+        self.arbeitsflaeche = self._arbeitsflaeche_ermitteln()
         self.vorschau_bild = None
         self.aussen.destroy()
         self.master.configure(bg=BG)
@@ -1846,7 +1868,7 @@ class QRApp:
         self._stil_setzen()
         self._aufbauen()
         self.master.title(f"{PROGRAMM} {VERSION}")
-        self._fenster_einpassen()
+        self._fenster_einpassen(position_behalten=True)
 
     # -- Eingaben ----------------------------------------------------------
 
