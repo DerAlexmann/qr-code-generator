@@ -1088,6 +1088,10 @@ class QRApp:
 
     def __init__(self, master, start: QROptionen | None = None, starttext: str = "") -> None:
         self.master = master
+        # Das Fenster bleibt verborgen, bis es fertig aufgebaut und an seinem
+        # Platz ist. Sonst zeigt Windows es beim ersten update_idletasks() an
+        # der Standardposition, und es springt danach sichtbar zur Mitte.
+        master.withdraw()
         self.opts = start or QROptionen()
         self.gewuenscht = self.opts          # ungeprueft, fuer den Vergleich
         self.transparenz_wunsch = self.opts.transparent   # ueberlebt Formatwechsel
@@ -1121,16 +1125,21 @@ class QRApp:
         self._stil_setzen()
         self._aufbauen()
         self._fenster_einpassen()
+        master.deiconify()
 
     # -- Bildschirm und Fenstergroesse -------------------------------------
 
     def _arbeitsflaeche_ermitteln(self) -> tuple[int, int, int, int]:
-        """Arbeitsbereich (x, y, Breite, Höhe) des Monitors, auf dem das Fenster liegt.
+        """Arbeitsbereich (x, y, Breite, Höhe) des Monitors, auf dem das Fenster erscheint.
 
         Bei mehreren Bildschirmen umfasst winfo_screenwidth() die gesamte
         virtuelle Flaeche. Wuerde man danach zentrieren, landete das Fenster auf
         der Naht zwischen zwei Monitoren. Unter Windows liefert GetMonitorInfo
         deshalb den tatsaechlichen Arbeitsbereich ohne Taskleiste.
+
+        Das Fenster ist hier noch verborgen und liegt auf keinem Monitor.
+        Massgeblich ist deshalb der Mauszeiger - er steht dort, wo eben
+        doppelgeklickt wurde.
         """
         if sys.platform == "win32":
             try:
@@ -1142,8 +1151,9 @@ class QRApp:
                                 ("rcWork", wintypes.RECT), ("dwFlags", wintypes.DWORD)]
 
                 benutzer = ctypes.windll.user32
-                fenster = benutzer.GetParent(self.master.winfo_id()) or self.master.winfo_id()
-                monitor = benutzer.MonitorFromWindow(fenster, 2)     # naechstgelegener Monitor
+                zeiger = wintypes.POINT()                # bleibt 0,0, falls die Abfrage scheitert
+                benutzer.GetCursorPos(ctypes.byref(zeiger))
+                monitor = benutzer.MonitorFromPoint(zeiger, 2)       # naechstgelegener Monitor
                 info = MONITORINFO()
                 info.cbSize = ctypes.sizeof(MONITORINFO)
                 if benutzer.GetMonitorInfoW(monitor, ctypes.byref(info)):

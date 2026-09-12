@@ -9,6 +9,23 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+### Behoben
+
+- **Das Fenster springt beim Start nicht mehr über den Bildschirm.** Beim
+  Aufbau misst die Oberfläche die Größe ihrer Elemente mit
+  `update_idletasks()`. Dabei zeigte Windows das Fenster bereits an seiner
+  Standardposition an, und erst danach wurde es in die Mitte gesetzt. Jetzt
+  bleibt es verborgen, bis es fertig aufgebaut und platziert ist, und erscheint
+  gleich an der richtigen Stelle.
+
+### Geändert
+
+- **Das Fenster öffnet sich auf dem Monitor, auf dem der Mauszeiger steht.**
+  Bisher entschied darüber, wo Windows das noch unfertige Fenster abgelegt
+  hatte. Ein verborgenes Fenster liegt aber noch auf keinem Monitor, deshalb
+  zählt jetzt die Stelle, an der doppelgeklickt wurde. Mit nur einem
+  Bildschirm ändert sich nichts.
+
 ## [1.1.2] – 2026-09-05
 
 ### Behoben
