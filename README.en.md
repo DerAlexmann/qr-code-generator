@@ -91,7 +91,8 @@ and appearance settings.
 The language selector and the "Dark" switch sit in the top right. Both take
 effect immediately and are stored in `qr-code-generator.json` next to the
 script. Without a stored setting the language follows the operating system.
-Switching rebuilds the window without losing the entered text or the settings.
+Switching leaves every control in place and only swaps texts and colours – the
+entered text, the settings and the selected tab are kept.
 
 German is the source language; English ships with the program. A further
 language is added by one entry each in `LANGUAGE_NAMES` and `TRANSLATIONS` at

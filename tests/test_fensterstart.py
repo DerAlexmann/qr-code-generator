@@ -74,7 +74,7 @@ def test_sprachwechsel_laesst_das_fenster_sichtbar(qr, wurzel):
     """Der Neuaufbau nach einem Sprachwechsel geht einen anderen Weg als der Start."""
     app = qr.QRApp(wurzel, qr.QROptionen(), "https://example.org")
     wurzel.update()
-    app._neu_aufbauen()
+    app._texte_auffrischen()
     wurzel.update()
     assert wurzel.state() == "normal"
     assert app.eingabe.get("1.0", "end-1c") == "https://example.org"
@@ -88,7 +88,7 @@ def test_sprachwechsel_behaelt_die_position(qr, wurzel):
     wurzel.update()
     vorher = (wurzel.winfo_x(), wurzel.winfo_y())
 
-    app._neu_aufbauen()
+    app._texte_auffrischen()
     wurzel.update()
     assert (wurzel.winfo_x(), wurzel.winfo_y()) == vorher
 
@@ -106,7 +106,7 @@ def test_sprachwechsel_ruft_resizable_nicht_auf(qr, wurzel):
         return echt(*args)
 
     wurzel.resizable = spion
-    app._neu_aufbauen()
+    app._texte_auffrischen()
     wurzel.update()
     assert aufrufe == []
 
@@ -123,7 +123,7 @@ def test_sprachwechsel_behaelt_das_windows_fenster(qr, wurzel):
         return ctypes.windll.user32.GetParent(wurzel.winfo_id())
 
     vorher = huelle()
-    app._neu_aufbauen()
+    app._texte_auffrischen()
     wurzel.update()
     assert huelle() == vorher
     assert ctypes.windll.user32.IsWindowVisible(huelle())
@@ -140,7 +140,7 @@ def test_sprachwechsel_holt_das_fenster_auf_den_bildschirm(qr, wurzel, ecke):
         wurzel.geometry(f"+{rand_x - 200}+{rand_y - 150}")
     wurzel.update()
 
-    app._neu_aufbauen()
+    app._texte_auffrischen()
     wurzel.update()
     # Aussenmasse samt Rahmen: die Innenflaeche plus der Abstand zum Rahmen
     links = wurzel.winfo_rootx() - wurzel.winfo_x()

@@ -9,6 +9,23 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+### Behoben
+
+- **Der Sprachwechsel baut die Oberfläche nicht mehr neu auf.** Bisher wurde
+  sie dafür komplett abgerissen und neu erstellt. Weil Tk jedes Element
+  einzeln zeichnet, sah man dabei rund 300 ms lang jeden Zwischenstand: leere
+  Flächen, eine schwarze Vorschau, Inhalt in der alten Breite, der sich dann
+  auseinanderzog. Jetzt bleiben alle Bedienelemente stehen und nur ihre Texte
+  werden ausgetauscht – so wie es der Wechsel des Farbschemas schon tut.
+  Solange Texte, Layout und Fensterbreite nachziehen, lässt Windows das alte
+  Bild stehen; gezeichnet wird erst, wenn alles fertig ist. Ohne dieses
+  Anhalten wären beim Verschieben der längeren Beschriftungen noch kurze
+  Doppelbilder zu sehen.
+  Eingaben, Einstellungen, der gewählte Reiter und die Bildlaufposition
+  bleiben dabei von selbst erhalten. Sichtbar ändert sich nur noch die
+  Fensterbreite, weil die Beschriftungen je nach Sprache unterschiedlich viel
+  Platz brauchen.
+
 ## [1.1.4] – 2026-09-12
 
 ### Behoben

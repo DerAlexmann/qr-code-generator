@@ -170,6 +170,26 @@ SOURCE_LANGUAGE = "de"
 CONFIG_NAME = "qr-code-generator.json"
 
 
+class Uebersetzt(str):
+    """Uebersetzter Text, der seinen deutschen Schluessel kennt.
+
+    Verhaelt sich ueberall wie ein gewoehnlicher String. beschriften() liest
+    daraus ab, wie sich eine Beschriftung nach einem Sprachwechsel neu bilden
+    laesst - samt der Werte, die mit format() eingesetzt wurden.
+    """
+
+    def __new__(cls, text, schluessel, werte=None):
+        neu = super().__new__(cls, text)
+        neu.schluessel = schluessel
+        neu.werte = werte or {}
+        return neu
+
+    def format(self, *args, **kwargs):
+        if args:                             # Positionsargumente nutzt hier niemand
+            return str.format(self, *args, **kwargs)
+        return Uebersetzt(str.format(self, **kwargs), self.schluessel, kwargs)
+
+
 class Translator:
     """Uebersetzt einen deutschen Quelltext in die eingestellte Sprache."""
 
@@ -178,8 +198,8 @@ class Translator:
 
     def __call__(self, text):
         if self.language == SOURCE_LANGUAGE:
-            return text
-        return TRANSLATIONS.get(self.language, {}).get(text, text)
+            return Uebersetzt(text, text)
+        return Uebersetzt(TRANSLATIONS.get(self.language, {}).get(text, text), text)
 
     def available(self):
         """Sprachkuerzel -> Anzeigename, Quellsprache immer zuerst."""
@@ -961,6 +981,75 @@ def farben_auffrischen():
     GEFAERBTE_WIDGETS[:] = uebrig
 
 
+# (Setzfunktion, Schluessel, Werte) - fuer den Sprachwechsel ohne Neuaufbau
+BESCHRIFTUNGEN: list = []
+
+
+def beschriftung_merken(setzen, text):
+    """setzen(text) ausfuehren und - stammt der Text aus _() - fuer spaeter merken.
+
+    Beim Sprachwechsel bildet texte_auffrischen() den Text aus demselben
+    Schluessel in der neuen Sprache und ruft setzen() erneut auf.
+    """
+    setzen(text)
+    if isinstance(text, Uebersetzt):
+        BESCHRIFTUNGEN.append((setzen, text.schluessel, text.werte))
+
+
+def beschriften(widget, text, option="text"):
+    """Widget beschriften und den Text fuer den Sprachwechsel merken.
+
+    Beispiel:  beschriften(label, _("Format"))
+    """
+    beschriftung_merken(lambda neu: widget.configure(**{option: neu}), text)
+    return widget
+
+
+def texte_auffrischen():
+    """Alle gemerkten Beschriftungen in die aktuelle Sprache bringen.
+
+    Zerstoerte Widgets fallen - wie bei farben_auffrischen() - ueber den
+    TclError aus der Liste heraus.
+    """
+    uebrig = []
+    for setzen, schluessel, werte in BESCHRIFTUNGEN:
+        text = _(schluessel)
+        try:
+            setzen(text.format(**werte) if werte else text)
+        except _tk.TclError:                 # Widget existiert nicht mehr
+            continue
+        uebrig.append((setzen, schluessel, werte))
+    BESCHRIFTUNGEN[:] = uebrig
+
+
+def zeichnen_anhalten(fenster_id):
+    """Haelt das Zeichnen eines Fensters samt Inhalt an; liefert die Fortsetzung.
+
+    Tk zeichnet jedes Element einzeln auf den Bildschirm. Aendert sich das
+    Layout - etwa weil Beschriftungen in einer anderen Sprache laenger sind -,
+    saehe man sonst jeden Zwischenstand, samt kurzer Doppelbilder verschobener
+    Elemente. Mit WM_SETREDRAW laesst Windows das alte Bild stehen, bis alles
+    fertig ist; danach wird in einem Zug neu gezeichnet.
+
+    Die Fortsetzung muss auch im Fehlerfall laufen, sonst bliebe das Fenster
+    eingefroren - der Aufruf gehoert deshalb in ein try/finally.
+    """
+    if sys.platform != "win32":
+        return lambda: None
+    try:
+        import ctypes
+        benutzer = ctypes.windll.user32
+        benutzer.SendMessageW(fenster_id, 0x000B, 0, 0)      # WM_SETREDRAW aus
+    except (AttributeError, OSError):
+        return lambda: None
+
+    def fortsetzen():
+        benutzer.SendMessageW(fenster_id, 0x000B, 1, 0)      # WM_SETREDRAW an
+        # RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        benutzer.RedrawWindow(fenster_id, None, None, 0x0001 | 0x0080 | 0x0100)
+    return fortsetzen
+
+
 def widgets_bereitstellen():
     """Definiert die Widget-Klassen, sobald Tkinter geladen ist."""
     global FlatButton
@@ -985,6 +1074,7 @@ def widgets_bereitstellen():
             super().__init__(parent, text=text, command=command, relief="flat", bd=0,
                              highlightthickness=0, cursor="hand2", font=FONT_SMALL, **kw)
             self._kind = kind
+            beschriften(self, text)                  # merkt sich uebersetzte Texte
             self.neu_faerben()
             self.bind("<Enter>", self._on_enter)
             self.bind("<Leave>", self._on_leave)
@@ -1021,18 +1111,17 @@ def make_card(parent, **pack_kw):
 
 
 def card_title(parent, text):
-    etikett = faerben(_tk.Label(parent, text=text, font=FONT_BOLD, anchor="w"),
-                      bg="CARD", fg="TEXT")
+    etikett = beschriften(faerben(_tk.Label(parent, font=FONT_BOLD, anchor="w"),
+                                  bg="CARD", fg="TEXT"), text)
     etikett.pack(fill="x", padx=14, pady=(12, 6))
     return etikett
 
 
 def card_text(parent, text, rolle="MUTED", font=None):
     """Fliesstext in einer Karte."""
-    etikett = faerben(
-        _tk.Label(parent, text=text, font=font or FONT_SMALL, justify="left",
-                  anchor="w", wraplength=760),
-        bg="CARD", fg=rolle)
+    etikett = beschriften(faerben(
+        _tk.Label(parent, font=font or FONT_SMALL, justify="left", anchor="w", wraplength=760),
+        bg="CARD", fg=rolle), text)
     etikett.pack(fill="x", padx=14, pady=(0, 10))
     return etikett
 
@@ -1285,6 +1374,7 @@ class QRApp:
     def _aufbauen(self) -> None:
         tk, ttk = _tk, _ttk
         GEFAERBTE_WIDGETS.clear()
+        BESCHRIFTUNGEN.clear()
         self.aussen = faerben(tk.Frame(self.master), bg="BG")
         self.aussen.pack(fill="both", expand=True)
 
@@ -1294,7 +1384,8 @@ class QRApp:
         self.reiter.pack(fill="both", expand=True, padx=16, pady=(12, 0))
 
         seite_qr = faerben(tk.Frame(self.reiter), bg="BG")
-        self.reiter.add(seite_qr, text="  " + _("QR-Code") + "  ")
+        self.reiter.add(seite_qr)
+        self._reiter_beschriften(seite_qr, _("QR-Code"))
         self._seite_qr_bauen(seite_qr)
 
         # Die Höhe der ersten Seite gibt das Maß vor; die beiden Textseiten
@@ -1303,11 +1394,13 @@ class QRApp:
         hoehe = max(seite_qr.winfo_reqheight(), round(320 * self.skalierung))
 
         seite_hilfe = faerben(tk.Frame(self.reiter), bg="BG")
-        self.reiter.add(seite_hilfe, text="  " + _("Erklärungen") + "  ")
+        self.reiter.add(seite_hilfe)
+        self._reiter_beschriften(seite_hilfe, _("Erklärungen"))
         self._seite_hilfe_bauen(seite_hilfe, hoehe)
 
         seite_info = faerben(tk.Frame(self.reiter), bg="BG")
-        self.reiter.add(seite_info, text="  " + _("Info & Copyright") + "  ")
+        self.reiter.add(seite_info)
+        self._reiter_beschriften(seite_info, _("Info & Copyright"))
         self._seite_info_bauen(seite_info, hoehe)
 
         self._statusleiste_bauen(self.aussen)
@@ -1322,6 +1415,9 @@ class QRApp:
 
         self.master.bind("<Control-s>", lambda _e: self.speichern())
 
+    def _reiter_beschriften(self, seite, titel) -> None:
+        beschriftung_merken(lambda neu: self.reiter.tab(seite, text=f"  {neu}  "), titel)
+
     def _kopfzeile_bauen(self, eltern) -> None:
         tk, ttk = _tk, _ttk
         kopf = faerben(tk.Frame(eltern), bg="HEADER")
@@ -1331,15 +1427,15 @@ class QRApp:
         marke.pack(side="left", padx=18, pady=12)
         faerben(tk.Label(marke, text=PROGRAMM, font=("Segoe UI", 15, "bold"), anchor="w"),
                 bg="HEADER", fg="HEADER_TITLE").pack(fill="x")
-        faerben(tk.Label(marke, text=_("Version {version}").format(version=VERSION),
-                         font=FONT_TINY, anchor="w"),
-                bg="HEADER", fg="HEADER_GROUP").pack(fill="x")
+        beschriften(faerben(tk.Label(marke, font=FONT_TINY, anchor="w"),
+                            bg="HEADER", fg="HEADER_GROUP"),
+                    _("Version {version}").format(version=VERSION)).pack(fill="x")
 
         umschalter = faerben(tk.Frame(kopf), bg="HEADER")
         umschalter.pack(side="right", padx=18)
-        faerben(tk.Label(umschalter, text=_("Sprache & Darstellung"),
-                         font=("Segoe UI", 8, "bold"), anchor="e"),
-                bg="HEADER", fg="HEADER_GROUP").pack(fill="x", pady=(10, 2))
+        beschriften(faerben(tk.Label(umschalter, font=("Segoe UI", 8, "bold"), anchor="e"),
+                            bg="HEADER", fg="HEADER_GROUP"),
+                    _("Sprache & Darstellung")).pack(fill="x", pady=(10, 2))
 
         zeile = faerben(tk.Frame(umschalter), bg="HEADER")
         zeile.pack(fill="x", pady=(0, 10))
@@ -1350,12 +1446,12 @@ class QRApp:
         self.sprachfeld.pack(side="left")
         self.sprachfeld.bind("<<ComboboxSelected>>", self._sprache_gewaehlt)
 
-        faerben(tk.Checkbutton(zeile, text=_("Dunkel"), variable=self.var_dunkel,
-                               command=self._schema_umgeschaltet, font=FONT_SMALL,
-                               highlightthickness=0, bd=0, cursor="hand2"),
-                bg="HEADER", fg="HEADER_TEXT", activebackground="HEADER",
-                activeforeground="HEADER_TITLE", selectcolor="HEADER_HOVER").pack(
-            side="left", padx=(8, 0))
+        beschriften(faerben(tk.Checkbutton(zeile, variable=self.var_dunkel,
+                                           command=self._schema_umgeschaltet, font=FONT_SMALL,
+                                           highlightthickness=0, bd=0, cursor="hand2"),
+                            bg="HEADER", fg="HEADER_TEXT", activebackground="HEADER",
+                            activeforeground="HEADER_TITLE", selectcolor="HEADER_HOVER"),
+                    _("Dunkel")).pack(side="left", padx=(8, 0))
 
     def _statusleiste_bauen(self, eltern) -> None:
         tk = _tk
@@ -1395,12 +1491,13 @@ class QRApp:
         self.eingabe.configure(yscrollcommand=rolle.set)
         self.eingabe.bind("<<Modified>>", self._text_geaendert)
 
-        faerben(tk.Checkbutton(karte_inhalt,
-                               text=_("Jede Zeile als eigenen QR-Code speichern (Stapel)"),
-                               variable=self.var_stapel, font=FONT_SMALL,
-                               highlightthickness=0, bd=0, cursor="hand2", anchor="w"),
-                bg="CARD", fg="TEXT", activebackground="CARD", activeforeground="TEXT",
-                selectcolor="FIELD_BG").pack(fill="x", padx=12, pady=(0, 10))
+        beschriften(faerben(tk.Checkbutton(karte_inhalt, variable=self.var_stapel,
+                                           font=FONT_SMALL, highlightthickness=0, bd=0,
+                                           cursor="hand2", anchor="w"),
+                            bg="CARD", fg="TEXT", activebackground="CARD",
+                            activeforeground="TEXT", selectcolor="FIELD_BG"),
+                    _("Jede Zeile als eigenen QR-Code speichern (Stapel)")).pack(
+            fill="x", padx=12, pady=(0, 10))
 
         # --- Einstellungen ---
         karte_opt = make_card(links, fill="x", pady=(10, 0))
@@ -1446,9 +1543,9 @@ class QRApp:
             gitter.columnconfigure(spalte, weight=1)
 
         def beschriftung(text, zeile, spalte):
-            faerben(tk.Label(gitter, text=text, font=FONT_SMALL, anchor="w"),
-                    bg="CARD", fg="MUTED").grid(row=zeile, column=spalte, sticky="w",
-                                                padx=(0, 8), pady=4)
+            beschriften(faerben(tk.Label(gitter, font=FONT_SMALL, anchor="w"),
+                                bg="CARD", fg="MUTED"), text).grid(
+                row=zeile, column=spalte, sticky="w", padx=(0, 8), pady=4)
 
         beschriftung(_("Format"), 0, 0)
         ttk.Combobox(gitter, textvariable=self.var_format, values=FORMAT_REIHENFOLGE,
@@ -1485,12 +1582,13 @@ class QRApp:
             self.feld_dpi.bind(ereignis, lambda _e: self._zahl_begrenzen(self.var_dpi, 72, 1200))
 
         self.feld_transparent = faerben(
-            tk.Checkbutton(gitter, text=_("Hintergrund transparent"),
-                           variable=self.var_transparent, command=self._transparenz_umgeschaltet,
+            tk.Checkbutton(gitter, variable=self.var_transparent,
+                           command=self._transparenz_umgeschaltet,
                            font=FONT_SMALL, highlightthickness=0, bd=0, cursor="hand2",
                            anchor="w"),
             bg="CARD", fg="TEXT", activebackground="CARD", activeforeground="TEXT",
             selectcolor="FIELD_BG", disabledforeground="BTN_DISABLED")
+        beschriften(self.feld_transparent, _("Hintergrund transparent"))
         self.feld_transparent.grid(row=2, column=2, columnspan=2, sticky="w", pady=4)
 
         beschriftung(_("Vordergrund"), 3, 0)
@@ -1627,12 +1725,12 @@ class QRApp:
                     bg="CARD", fg="ACCENT").pack(side="left")
             faerben(tk.Label(zeile, text=info.endung, font=FONT_MONO, width=7, anchor="w"),
                     bg="CARD", fg="MUTED").pack(side="left")
-            faerben(tk.Label(zeile, text=_("Transparenz") if info.alpha else "",
-                             font=FONT_TINY, width=12, anchor="w"),
-                    bg="CARD", fg="OK").pack(side="left")
-            faerben(tk.Label(zeile, text=_(info.beschreibung), font=FONT_SMALL,
-                             anchor="w", justify="left"),
-                    bg="CARD", fg="TEXT").pack(side="left", fill="x", expand=True)
+            beschriften(faerben(tk.Label(zeile, font=FONT_TINY, width=12, anchor="w"),
+                                bg="CARD", fg="OK"),
+                        _("Transparenz") if info.alpha else "").pack(side="left")
+            beschriften(faerben(tk.Label(zeile, font=FONT_SMALL, anchor="w", justify="left"),
+                                bg="CARD", fg="TEXT"),
+                        _(info.beschreibung)).pack(side="left", fill="x", expand=True)
         card_text(karte, _(
             "Was ein Format nicht beherrscht, lässt sich gar nicht erst einstellen: "
             "Bei JPEG, BMP, GIF, PDF und EPS ist das Häkchen für Transparenz ausgegraut, "
@@ -1647,8 +1745,9 @@ class QRApp:
             zeile.pack(fill="x", padx=14, pady=2)
             faerben(tk.Label(zeile, text=kuerzel, font=FONT_BOLD, width=6, anchor="w"),
                     bg="CARD", fg="ACCENT").pack(side="left")
-            faerben(tk.Label(zeile, text=_(text), font=FONT_SMALL, anchor="w"),
-                    bg="CARD", fg="TEXT").pack(side="left", fill="x", expand=True)
+            beschriften(faerben(tk.Label(zeile, font=FONT_SMALL, anchor="w"),
+                                bg="CARD", fg="TEXT"),
+                        _(text)).pack(side="left", fill="x", expand=True)
         card_text(karte, _(
             "Je höher die Stufe, desto mehr Schmutz, Knicke oder Überdeckung verträgt der "
             "Code - er braucht dafür aber mehr Module und wirkt feiner. Für Aufkleber und "
@@ -1722,10 +1821,12 @@ class QRApp:
                     bg="CARD", fg="OK" if vorhanden else "WARN").pack(side="left")
             faerben(tk.Label(zeile, text=name, font=FONT_BOLD, width=12, anchor="w"),
                     bg="CARD", fg="TEXT").pack(side="left")
-            faerben(tk.Label(zeile, text=zweck, font=FONT_SMALL, anchor="w"),
-                    bg="CARD", fg="MUTED").pack(side="left", fill="x", expand=True)
-            faerben(tk.Label(zeile, text=stand, font=FONT_SMALL),
-                    bg="CARD", fg="OK" if vorhanden else "WARN").pack(side="right")
+            beschriften(faerben(tk.Label(zeile, font=FONT_SMALL, anchor="w"),
+                                bg="CARD", fg="MUTED"),
+                        zweck).pack(side="left", fill="x", expand=True)
+            beschriften(faerben(tk.Label(zeile, font=FONT_SMALL),
+                                bg="CARD", fg="OK" if vorhanden else "WARN"),
+                        stand).pack(side="right")
         if ist_eingefroren():
             card_text(karte, _(
                 "Diese Fassung läuft als eigenständiges Programm - die Bibliotheken sind "
@@ -1792,19 +1893,14 @@ class QRApp:
                 return
 
     def sprache_setzen(self, code: str) -> None:
-        """Sprache umstellen und die Oberfläche neu aufbauen.
-
-        Anders als beim Farbschema aendert sich hier jeder Beschriftungstext und
-        damit der Platzbedarf saemtlicher Elemente - ein Neuaufbau ist der
-        ehrlichere Weg als hunderte Einzeltexte nachzuziehen.
-        """
+        """Sprache umstellen - die Oberfläche bleibt stehen, nur die Texte wechseln."""
         if code == _.language:
             return
         _.language = code
         einstellungen = load_config()
         einstellungen["language"] = code
         save_config(einstellungen)
-        self._neu_aufbauen()
+        self._texte_auffrischen()
 
     def _schema_umgeschaltet(self) -> None:
         self.schema_setzen("dark" if self.var_dunkel.get() else "light")
@@ -1827,52 +1923,34 @@ class QRApp:
         self._stil_setzen()
         farben_auffrischen()
 
-    def _neu_aufbauen(self) -> None:
-        """Oberfläche komplett neu aufbauen (nach einem Sprachwechsel).
+    def _texte_auffrischen(self) -> None:
+        """Alle Beschriftungen in die eingestellte Sprache bringen - ohne Neuaufbau.
 
-        Der eingegebene Text und alle Einstellungen werden dabei uebernommen -
-        ein Sprachwechsel mitten in der Arbeit darf nichts verwerfen.
+        Wie beim Farbschema bleiben die Widgets stehen, nur ihre Texte werden
+        ausgetauscht. Bis 1.1.4 wurde die Oberflaeche dafuer abgerissen und neu
+        aufgebaut; weil Tk jedes Element einzeln zeichnet, sah man dabei rund
+        300 ms lang jeden Zwischenstand - leere Flaechen, eine schwarze
+        Vorschau, Inhalt in der alten Breite. Eingaben, Einstellungen und
+        Bildlaufposition bleiben jetzt von selbst, wo sie sind.
+
+        Waehrend Texte, Layout und Fensterbreite nachziehen, bleibt das alte
+        Bild stehen (siehe zeichnen_anhalten); gezeichnet wird erst, wenn
+        alles fertig ist.
         """
-        if self.nachlauf is not None:
-            self.master.after_cancel(self.nachlauf)
-            self.nachlauf = None
-
-        self.starttext = self.eingabe.get("1.0", "end-1c")
-        gemerkt = {
-            "format": self.var_format.get(),
-            "groesse": self.var_groesse.get(),
-            "korrektur": self.var_korrektur.get(),
-            "rand": self.var_rand.get(),
-            "dpi": self.var_dpi.get(),
-            "vordergrund": self.var_vordergrund.get(),
-            "hintergrund": self.var_hintergrund.get(),
-            "transparent": self.var_transparent.get(),
-            "transparenz_wunsch": self.transparenz_wunsch,
-            "stapel": self.var_stapel.get(),
-        }
-
-        # Das Fenster kann inzwischen auf einem anderen Monitor liegen.
-        self.arbeitsflaeche = self._arbeitsflaeche_ermitteln()
-        self.vorschau_bild = None
-        self.aussen.destroy()
-        self.master.configure(bg=BG)
-
-        self._variablen_anlegen()
-        self.var_format.set(gemerkt["format"])
-        self.var_groesse.set(gemerkt["groesse"])
-        self.var_korrektur.set(gemerkt["korrektur"])
-        self.var_rand.set(gemerkt["rand"])
-        self.var_dpi.set(gemerkt["dpi"])
-        self.var_vordergrund.set(gemerkt["vordergrund"])
-        self.var_hintergrund.set(gemerkt["hintergrund"])
-        self.transparenz_wunsch = gemerkt["transparenz_wunsch"]
-        self.var_transparent.set(gemerkt["transparent"])
-        self.var_stapel.set(gemerkt["stapel"])
-
-        self._stil_setzen()
-        self._aufbauen()
-        self.master.title(f"{PROGRAMM} {VERSION}")
-        self._fenster_einpassen(position_behalten=True)
+        fortsetzen = zeichnen_anhalten(self.master.winfo_id())
+        try:
+            texte_auffrischen()
+            self.sprachfeld.set(self.sprachnamen.get(_.language, self.sprachfeld.get()))
+            if self.nachlauf is not None:
+                self.master.after_cancel(self.nachlauf)
+            self._neu_zeichnen()             # Vorschauhinweis, Info- und Statuszeile
+            # Die Beschriftungen brauchen je nach Sprache mehr oder weniger Platz,
+            # und das Fenster kann inzwischen auf einem anderen Monitor liegen.
+            self.arbeitsflaeche = self._arbeitsflaeche_ermitteln()
+            self._fenster_einpassen(position_behalten=True)
+            self.master.update_idletasks()
+        finally:
+            fortsetzen()
 
     # -- Eingaben ----------------------------------------------------------
 

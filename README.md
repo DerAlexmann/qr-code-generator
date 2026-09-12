@@ -91,8 +91,9 @@ und Darstellungseinstellungen.
 Oben rechts stehen die Sprachauswahl und der Schalter „Dunkel". Beides gilt
 sofort und wird in `qr-code-generator.json` neben dem Skript gespeichert. Ohne
 gespeicherte Einstellung richtet sich die Sprache nach dem Betriebssystem.
-Ein Wechsel baut die Oberfläche neu auf, ohne den eingegebenen Text oder die
-Einstellungen zu verlieren.
+Beim Wechsel bleiben alle Bedienelemente stehen, nur Texte und Farben werden
+ausgetauscht – eingegebener Text, Einstellungen und gewählter Reiter bleiben
+erhalten.
 
 Quellsprache ist Deutsch; mitgeliefert ist zusätzlich Englisch. Eine weitere
 Sprache entsteht durch je einen Eintrag in `LANGUAGE_NAMES` und `TRANSLATIONS`
