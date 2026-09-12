@@ -9,6 +9,19 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.4] – 2026-09-12
+
+### Behoben
+
+- **Beim Sprachwechsel blitzt das Fenster nicht mehr auf.** Der Neuaufbau
+  setzte jedes Mal erneut, ob das Fenster in der Größe veränderbar ist. Unter
+  Windows legt Tk dafür das äußere Fenster neu an – auch dann, wenn sich an der
+  Einstellung nichts ändert. Das Fenster verschwand dadurch kurz und kam mit der
+  Öffnen-Animation von Windows wieder. Die Einstellung wird jetzt nur noch
+  gesetzt, wenn sie sich tatsächlich ändert. Beim Sprachwechsel ändert sich
+  damit nur noch die Breite, weil die Beschriftungen je nach Sprache
+  unterschiedlich viel Platz brauchen.
+
 ## [1.1.3] – 2026-09-12
 
 ### Behoben

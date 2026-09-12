@@ -1,5 +1,5 @@
 """
-QR-Code-Generator 1.1.3 - QR-Codes aus Text erzeugen und als Bild speichern
+QR-Code-Generator 1.1.4 - QR-Codes aus Text erzeugen und als Bild speichern
 
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.
@@ -55,7 +55,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 
 PROGRAMM = "QR-Code-Generator"
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 
 # --------------------------------------------------------------------------
@@ -1202,7 +1202,11 @@ class QRApp:
             y = rand_y + max(0, (platz_hoehe - hoehe) // 3)
 
         self.master.geometry(f"{breite}x{hoehe}+{x}+{y}")
-        self.master.resizable(not passt, not passt)
+        # wm resizable legt unter Windows das aeussere Fenster neu an, auch wenn
+        # sich nichts aendert. Beim Sprachwechsel verschwand es dadurch kurz und
+        # kam mit der Oeffnen-Animation wieder. Deshalb nur bei Aenderung aufrufen.
+        if tuple(map(bool, self.master.resizable())) != (not passt, not passt):
+            self.master.resizable(not passt, not passt)
         if not passt:
             self.master.minsize(round(480 * self.skalierung), round(360 * self.skalierung))
 

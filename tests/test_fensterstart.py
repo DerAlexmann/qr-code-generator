@@ -7,7 +7,12 @@ sprang sichtbar ueber den Bildschirm.
 
 Ebenso sprang ein verschobenes Fenster nach einem Sprachwechsel zurueck in
 die Mitte, weil der Neuaufbau dieselbe Einpassung wie der Start benutzte.
+
+Und selbst an Ort und Stelle blitzte es beim Sprachwechsel auf: wm resizable
+legt unter Windows das aeussere Fenster neu an, auch ohne Aenderung.
 """
+
+import sys
 
 import pytest
 
@@ -86,6 +91,42 @@ def test_sprachwechsel_behaelt_die_position(qr, wurzel):
     app._neu_aufbauen()
     wurzel.update()
     assert (wurzel.winfo_x(), wurzel.winfo_y()) == vorher
+
+
+def test_sprachwechsel_ruft_resizable_nicht_auf(qr, wurzel):
+    """Ohne Änderung kein wm resizable - es würde das Fenster neu anlegen."""
+    app = qr.QRApp(wurzel, qr.QROptionen(), "https://example.org")
+    wurzel.update()
+    aufrufe = []
+    echt = wurzel.resizable
+
+    def spion(*args):
+        if args:                                # nur Setzen, nicht Abfragen
+            aufrufe.append(args)
+        return echt(*args)
+
+    wurzel.resizable = spion
+    app._neu_aufbauen()
+    wurzel.update()
+    assert aufrufe == []
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="prüft das Windows-Fensterhandle")
+def test_sprachwechsel_behaelt_das_windows_fenster(qr, wurzel):
+    """Das äußere Windows-Fenster bleibt dasselbe - es blitzt nichts auf."""
+    import ctypes
+
+    app = qr.QRApp(wurzel, qr.QROptionen(), "https://example.org")
+    wurzel.update()
+
+    def huelle():
+        return ctypes.windll.user32.GetParent(wurzel.winfo_id())
+
+    vorher = huelle()
+    app._neu_aufbauen()
+    wurzel.update()
+    assert huelle() == vorher
+    assert ctypes.windll.user32.IsWindowVisible(huelle())
 
 
 @pytest.mark.parametrize("ecke", ["rechts unten", "links oben"])
