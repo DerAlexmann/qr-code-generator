@@ -9,6 +9,8 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.5] – 2026-09-12
+
 ### Behoben
 
 - **Der Sprachwechsel baut die Oberfläche nicht mehr neu auf.** Bisher wurde
