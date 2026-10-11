@@ -56,6 +56,12 @@ pip install -r requirements.txt
 Wer keine Python-Installation einrichten möchte, nimmt die fertige `QR-Code-Generator.exe`
 aus dem [neuesten Release](https://github.com/DerAlexmann/qr-code-generator/releases/latest).
 
+Diese EXE ist nicht signiert. Windows SmartScreen fragt deshalb beim ersten
+Start einmalig nach – „Weitere Informationen" → „Trotzdem ausführen". Ein
+Virenschutz hält eine frisch heruntergeladene, unbekannte Datei zudem für ein
+paar Sekunden fest, während er sie prüft; ein Startversuch in dieser Zeit
+bricht mit „Zugriff verweigert" ab. Dann kurz warten und erneut starten.
+
 Benötigt Python 3.9 oder neuer. Tkinter für die Oberfläche ist bei
 Windows-Installationen von Python bereits enthalten.
 

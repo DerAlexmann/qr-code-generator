@@ -56,6 +56,12 @@ pip install -r requirements.txt
 If you would rather not set up Python, take the ready-made `QR-Code-Generator.exe`
 from the [latest release](https://github.com/DerAlexmann/qr-code-generator/releases/latest).
 
+That EXE is not signed. Windows SmartScreen therefore asks once on the first
+start - "More info" -> "Run anyway". A virus scanner also holds a freshly
+downloaded, unknown file for a few seconds while it checks it; starting it
+during that time fails with "Access denied". Just wait a moment and start it
+again.
+
 Requires Python 3.9 or newer. Tkinter for the window already ships with the
 Windows installers of Python.
 
