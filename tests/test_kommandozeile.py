@@ -128,3 +128,75 @@ def test_sprache_der_ausgabe(qr, tmp_path, sprache):
 def test_unbekanntes_format_wird_abgelehnt(qr, tmp_path):
     ergebnis = aufrufen("Test", "-f", "GIBTSNICHT", "-a", str(tmp_path))
     assert ergebnis.returncode != 0
+
+
+# --------------------------------------------------------------------------
+# Stapeldatei: der mitgegebene Name ist ein Dateiname, kein Pfad
+#
+# Vor dem Fix wanderte der Name hinter dem "|" ungeprueft in os.path.join().
+# Eine Zeile wie "Inhalt | ..\woanders" schrieb damit aus dem Ausgabeordner
+# heraus, ein absoluter Pfad verwarf ihn vollstaendig, und os.makedirs() legte
+# unterwegs auch noch Verzeichnisse an.
+# --------------------------------------------------------------------------
+
+AUSBRUCHSNAMEN = [
+    "../entkommen",
+    r"..\entkommen",
+    "../../zwei_hoch",
+    "unterordner/tiefer",
+    r"unterordner\tiefer",
+    "....//entkommen",
+]
+
+
+@pytest.mark.parametrize("name", AUSBRUCHSNAMEN)
+def test_stapelname_bleibt_im_ausgabeordner(qr, tmp_path, name):
+    liste = tmp_path / "liste.txt"
+    liste.write_text(f"https://example.org | {name}\n", encoding="utf-8")
+    ausgabe = tmp_path / "aus"
+    ausgabe.mkdir()
+
+    ergebnis = aufrufen("--stapel", str(liste), "-a", str(ausgabe), "-q")
+    assert ergebnis.returncode == 0, ergebnis.stderr
+
+    geschrieben = list(tmp_path.rglob("*.png"))
+    assert len(geschrieben) == 1, geschrieben
+    assert geschrieben[0].parent == ausgabe, geschrieben[0]
+    assert not any(p.is_dir() for p in ausgabe.iterdir())
+
+
+def test_stapelname_als_absoluter_pfad_wird_entschaerft(qr, tmp_path):
+    """Ein absoluter Pfad darf -a nicht aushebeln."""
+    fremd = tmp_path / "fremd"
+    fremd.mkdir()
+    liste = tmp_path / "liste.txt"
+    liste.write_text(f"https://example.org | {fremd / 'gelandet'}\n", encoding="utf-8")
+    ausgabe = tmp_path / "aus"
+
+    ergebnis = aufrufen("--stapel", str(liste), "-a", str(ausgabe), "-q")
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert list(fremd.iterdir()) == []
+    assert len(list(ausgabe.glob("*.png"))) == 1
+
+
+def test_stapelname_ueberschreibt_nichts_ausserhalb(qr, tmp_path):
+    """Mit --ueberschreiben darf keine Datei neben dem Ausgabeordner fallen."""
+    opfer = tmp_path / "opfer.png"
+    opfer.write_text("unberuehrt", encoding="utf-8")
+    liste = tmp_path / "liste.txt"
+    liste.write_text("https://example.org | ../opfer.png\n", encoding="utf-8")
+    ausgabe = tmp_path / "aus"
+
+    ergebnis = aufrufen("--stapel", str(liste), "-a", str(ausgabe), "--ueberschreiben", "-q")
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert opfer.read_text(encoding="utf-8") == "unberuehrt"
+
+
+def test_brauchbarer_stapelname_bleibt_erhalten(qr, tmp_path):
+    """Die Saeuberung darf gewoehnliche Namen nicht verbiegen."""
+    liste = tmp_path / "liste.txt"
+    liste.write_text("https://example.org | Aushang Eingang-2\n", encoding="utf-8")
+    ausgabe = tmp_path / "aus"
+
+    assert aufrufen("--stapel", str(liste), "-a", str(ausgabe), "-q").returncode == 0
+    assert (ausgabe / "Aushang_Eingang-2.png").is_file(), sorted(ausgabe.iterdir())

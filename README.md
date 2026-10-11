@@ -132,6 +132,10 @@ mailto:info@example.org    | kontakt
 WIFI:T:WPA;S:Gastnetz;P:geheim;;
 ```
 
+Der Name nach dem `|` ist ein Dateiname, kein Pfad: Leerzeichen und
+Sonderzeichen werden zu Unterstrichen, Ordnerangaben entfernt. Geschrieben wird
+ausschließlich in den Ordner aus `-a`/`--ausgabeordner`.
+
 ## Als EXE bündeln
 
 ```bash

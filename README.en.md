@@ -130,6 +130,10 @@ mailto:info@example.org    | contact
 WIFI:T:WPA;S:GuestNet;P:secret;;
 ```
 
+The name after the `|` is a file name, not a path: spaces and special
+characters become underscores, folder parts are removed. Files are only ever
+written into the folder given by `-a`/`--ausgabeordner`.
+
 ## Bundling as an EXE
 
 ```bash

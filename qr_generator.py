@@ -895,7 +895,16 @@ def cli_main(args: argparse.Namespace) -> int:
         breite = len(str(len(eintraege)))
         fehler = 0
         for nummer, (inhalt, name) in enumerate(eintraege, start=1):
-            name = name or dateiname_vorschlagen(inhalt, nummer)
+            # Auch ein mitgegebener Name geht durch dateiname_vorschlagen():
+            # Die Stapeldatei gibt einen Dateinamen vor, keinen Pfad. Ungeprueft
+            # wuerde eine Zeile wie "Inhalt | ..\woanders" aus dem Ausgabeordner
+            # herausschreiben, und ein absoluter Pfad wuerde ihn ganz verwerfen -
+            # os.path.join behaelt dann nur den zweiten Teil. Der Saeuberer macht
+            # aus Trennzeichen Unterstriche und laesst von ".." nichts uebrig.
+            if name:
+                name = dateiname_vorschlagen(name)
+            else:
+                name = dateiname_vorschlagen(inhalt, nummer)
             ziel = endung_ergaenzen(os.path.join(args.ausgabeordner, name), opts.format_info())
             if not args.ueberschreiben:
                 ziel = freier_pfad(ziel)
