@@ -9,6 +9,40 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.6] – 2026-10-11
+
+### Sicherheit
+
+- **Ein Dateiname in der Stapeldatei kann nicht mehr aus dem Ausgabeordner
+  herausschreiben.** Der Name hinter dem `|` wurde bisher ungeprüft übernommen.
+  Eine Zeile wie `Inhalt | ..\woanders` schrieb damit neben den gewählten
+  Ordner, ein absoluter Pfad hob `--ausgabeordner` ganz aus (`os.path.join`
+  behält dann nur den zweiten Teil), und fehlende Verzeichnisse wurden dabei
+  sogar angelegt – mit `--ueberschreiben` auch über vorhandene Dateien hinweg.
+  Wer eine Stapelliste aus fremder Hand verarbeitet, hat so Dateien an Stellen
+  bekommen, die er nicht gewählt hat. Der Name geht jetzt durch denselben
+  Säuberer, der auch die aus dem Inhalt abgeleiteten Namen erzeugt und den die
+  Oberfläche längst benutzt; aus Trennzeichen werden Unterstriche, von `..`
+  bleibt nichts übrig.
+
+### Geändert
+
+- Eigene Dateinamen in der Stapeldatei werden wie abgeleitete Namen
+  normalisiert: Leerzeichen und Sonderzeichen werden zu Unterstrichen, die
+  Länge ist auf 48 Zeichen begrenzt. Aus `Aushang Eingang` wird damit
+  `Aushang_Eingang.png`.
+
+### Hinzugefügt
+
+- **Eigenes Programmsymbol.** Die EXE trug bisher das Standardsymbol von
+  PyInstaller und das Fenster die Feder von Tk. Beide zeigen jetzt einen
+  stilisierten QR-Code in Weiß auf abgerundetem Akzentblau – dieselbe
+  Handschrift wie bei den übrigen Werkzeugen. Gezeichnet wird er von
+  `icon_erzeugen.py`; die `.ico` enthält alle Größen von 16 bis 256 Pixel,
+  für 16 und 24 Pixel eine gröbere Fassung, weil die Ringe der Eckmarken in
+  dieser Größe sonst zulaufen. Fehlt die Datei, startet das Programm
+  unverändert – nur eben wieder mit der Feder.
+
 ## [1.1.5] – 2026-09-12
 
 ### Behoben
