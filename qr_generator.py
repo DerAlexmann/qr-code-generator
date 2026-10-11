@@ -4,9 +4,6 @@ QR-Code-Generator 1.1.6 - QR-Codes aus Text erzeugen und als Bild speichern
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.
 
-Farbschema, Sprachumschaltung und Aufbau folgen der Bild-Toolbox, damit sich
-beide Programme gleich anfuehlen.
-
 Zwei Betriebsarten in einer Datei:
   * Ohne Argumente  -> grafische Oberflaeche (Tkinter) mit Live-Vorschau
   * Mit Argumenten  -> Kommandozeile, auch fuer Stapelverarbeitung
@@ -62,8 +59,7 @@ SYMBOLDATEI = "qr_code_generator.ico"
 # --------------------------------------------------------------------------
 # Farbschemata
 #
-# Die Paletten stammen aus der Bild-Toolbox, damit beide Programme gleich
-# aussehen. apply_theme() schreibt die Werte der gewaehlten Palette in die
+# apply_theme() schreibt die Werte der gewaehlten Palette in die
 # Modulvariablen - der uebrige Code benutzt einfach BG, CARD, TEXT ... und
 # muss vom Umschalten nichts wissen. Ein eigenes Schema entsteht durch eine
 # weitere Palette mit denselben Namen.
@@ -161,10 +157,10 @@ FONT_MONO = ("Consolas", 10)
 # --------------------------------------------------------------------------
 # Sprachumschaltung
 #
-# Wie in der Bild-Toolbox ist Deutsch die Quellsprache: im Code steht der
-# deutsche Text, _("...") sucht ihn zur Laufzeit in der Sprachtabelle
-# TRANSLATIONS (ganz unten in dieser Datei). Dort ist auch beschrieben, wie
-# eine weitere Sprache dazukommt.
+# Deutsch ist die Quellsprache: im Code steht der deutsche Text, _("...")
+# sucht ihn zur Laufzeit in der Sprachtabelle TRANSLATIONS (ganz unten in
+# dieser Datei). Dort ist auch beschrieben, wie eine weitere Sprache
+# dazukommt.
 # --------------------------------------------------------------------------
 
 SOURCE_LANGUAGE = "de"
@@ -948,10 +944,10 @@ def cli_main(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------
 # Wiederverwendbare Widgets
 #
-# Aufbau und Benennung entsprechen der Bild-Toolbox. Zusaetzlich merkt sich
-# faerben() zu jedem Widget, welche Rolle seine Farben haben ("CARD", "TEXT",
-# ...). Ein Wechsel des Farbschemas faerbt die vorhandenen Widgets dadurch nur
-# um, statt die Oberflaeche neu aufzubauen - nichts blinkt, nichts springt.
+# faerben() merkt sich zu jedem Widget, welche Rolle seine Farben haben
+# ("CARD", "TEXT", ...). Ein Wechsel des Farbschemas faerbt die vorhandenen
+# Widgets dadurch nur um, statt die Oberflaeche neu aufzubauen - nichts
+# blinkt, nichts springt.
 # --------------------------------------------------------------------------
 
 # Wird von widgets_bereitstellen() belegt, sobald Tkinter geladen ist.
@@ -1816,8 +1812,7 @@ class QRApp:
         card_text(karte, f"{PROGRAMM} {VERSION}", rolle="TEXT", font=FONT_H2)
         card_text(karte, _(
             "Erzeugt QR-Codes aus beliebigen textbasierten Inhalten und speichert sie als "
-            "Bilddatei - in zehn Formaten und in jeder gewünschten Größe. Farbschema, "
-            "Sprachumschaltung und Aufbau folgen der Bild-Toolbox.\n\n"
+            "Bilddatei - in zehn Formaten und in jeder gewünschten Größe.\n\n"
             "Das gesamte Programm steckt in einer einzigen Datei und läuft wahlweise mit "
             "dieser Oberfläche oder auf der Kommandozeile.\n\n"
             "Tastatur: Strg+S speichert den angezeigten Code."))
@@ -2563,14 +2558,12 @@ TRANSLATIONS = {
         # --- Reiter 3: Info & Copyright -----------------------------------
         "Über dieses Programm": "About this program",
         "Erzeugt QR-Codes aus beliebigen textbasierten Inhalten und speichert sie als "
-        "Bilddatei - in zehn Formaten und in jeder gewünschten Größe. Farbschema, "
-        "Sprachumschaltung und Aufbau folgen der Bild-Toolbox.\n\n"
+        "Bilddatei - in zehn Formaten und in jeder gewünschten Größe.\n\n"
         "Das gesamte Programm steckt in einer einzigen Datei und läuft wahlweise mit "
         "dieser Oberfläche oder auf der Kommandozeile.\n\n"
         "Tastatur: Strg+S speichert den angezeigten Code.":
             "Creates QR codes from any text-based content and saves them as an image "
-            "file - in ten formats and at any size you like. Colour scheme, language "
-            "switching and layout follow the Bild-Toolbox.\n\n"
+            "file - in ten formats and at any size you like.\n\n"
             "The whole program lives in a single file and runs either with this window "
             "or on the command line.\n\n"
             "Keyboard: Ctrl+S saves the code on display.",

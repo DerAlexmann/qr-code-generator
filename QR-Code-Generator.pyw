@@ -3,7 +3,7 @@ QR-Code-Generator - Starter fuer den Doppelklick
 
 Diese Datei startet nur die Oberflaeche von qr_generator.py. Sie traegt die
 Endung .pyw, damit Windows sie mit pythonw.exe oeffnet: kein Konsolenfenster,
-nur das Programmfenster - genau wie bei der Bild-Toolbox.
+nur das Programmfenster.
 
 Fuer die Kommandozeile weiterhin qr_generator.py verwenden, dort steht auch
 das eigentliche Programm.

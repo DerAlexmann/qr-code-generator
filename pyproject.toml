@@ -23,7 +23,7 @@ select = [
 ]
 ignore = [
     # Die Farbnamen (BG, CARD, TEXT ...) werden von apply_theme() zur Laufzeit
-    # per globals().update() angelegt - genau wie in der Bild-Toolbox. Das ist
+    # per globals().update() angelegt. Das ist
     # beabsichtigt und macht das Umschalten des Farbschemas moeglich; statische
     # Analyse kann es nicht sehen, deshalb waeren es sonst ueber hundert
     # Fehlalarme. Dasselbe gilt fuer _tk, _ttk und _ImageTk, die gui_starten()

@@ -22,10 +22,9 @@ def qr():
     """Der geladene QR-Code-Generator als Modul."""
     assert SCRIPT.is_file(), f"Skript nicht gefunden: {SCRIPT}"
 
-    # Der Loader wird ausdruecklich mitgegeben - dieselbe Vorsichtsmassnahme
-    # wie in der Bild-Toolbox. Sie kostet nichts und haelt den Testaufbau
-    # unabhaengig davon, welche Endungen Python auf der jeweiligen Plattform
-    # als Quelldatei kennt.
+    # Der Loader wird ausdruecklich mitgegeben. Das kostet nichts und haelt
+    # den Testaufbau unabhaengig davon, welche Endungen Python auf der
+    # jeweiligen Plattform als Quelldatei kennt.
     loader = SourceFileLoader("qr_generator", str(SCRIPT))
     spec = importlib.util.spec_from_file_location("qr_generator", SCRIPT, loader=loader)
     assert spec is not None and spec.loader is not None, (
