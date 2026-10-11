@@ -9,7 +9,7 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
-## [1.1.6] – 2026-10-11
+## [1.1.7] – 2026-10-11
 
 ### Sicherheit
 
@@ -42,6 +42,18 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   für 16 und 24 Pixel eine gröbere Fassung, weil die Ringe der Eckmarken in
   dieser Größe sonst zulaufen. Fehlt die Datei, startet das Programm
   unverändert – nur eben wieder mit der Feder.
+
+### Entfernt
+
+- Der Hinweis, woran sich Farbschema, Sprachumschaltung und Aufbau orientieren,
+  steht nicht mehr im Reiter „Info & Copyright" und auch in keinem Kommentar
+  mehr. Woher die Farbauswahl eines Programms stammt, ist für die Benutzung
+  ohne Belang.
+
+### Geändert
+
+- Die Bildschirmfotos in beiden READMEs sind neu aufgenommen: mit dem neuen
+  Programmsymbol in der Titelleiste und der aktuellen Versionsnummer.
 
 ## [1.1.5] – 2026-09-12
 
@@ -156,8 +168,7 @@ ohne Farbschemata, Sprachumschaltung und Reiter.
 - **Kommandozeile** mit Inhalt aus Argument, Datei oder Standardeingabe
 - **Drei Reiter** – QR-Code, Erklärungen sowie Info & Copyright
 - **Farbschemata hell und dunkel** und **Sprachumschaltung Deutsch/Englisch**,
-  beides aus der Bild-Toolbox übernommen und in `qr-code-generator.json`
-  neben dem Programm gespeichert
+  beides in `qr-code-generator.json` neben dem Programm gespeichert
 - **QR-Code-Generator.pyw** als Startdatei für den Doppelklick ohne Konsolenfenster
 
 ### Behoben
