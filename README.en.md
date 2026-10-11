@@ -137,7 +137,7 @@ written into the folder given by `-a`/`--ausgabeordner`.
 ## Bundling as an EXE
 
 ```bash
-pyinstaller --onefile --windowed --name QR-Code-Generator --copy-metadata qrcode qr_generator.py
+pyinstaller --onefile --windowed --name QR-Code-Generator --icon qr_code_generator.ico --copy-metadata qrcode qr_generator.py
 ```
 
 PyInstaller finds `qrcode`, `Pillow` and Tkinter on its own – no extra

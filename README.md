@@ -139,7 +139,7 @@ ausschließlich in den Ordner aus `-a`/`--ausgabeordner`.
 ## Als EXE bündeln
 
 ```bash
-pyinstaller --onefile --windowed --name QR-Code-Generator --copy-metadata qrcode qr_generator.py
+pyinstaller --onefile --windowed --name QR-Code-Generator --icon qr_code_generator.ico --copy-metadata qrcode qr_generator.py
 ```
 
 `qrcode`, `Pillow` und Tkinter findet PyInstaller von selbst – zusätzliche

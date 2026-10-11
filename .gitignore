@@ -14,6 +14,8 @@ qr-code-generator.json
 *.ico
 *.eps
 !docs/screenshots/*.png
+# Das Programmsymbol ist keine Probeausgabe, sondern gehoert zum Projekt.
+!qr_code_generator.ico
 
 # --------------------------------------------------------------------------
 # Python

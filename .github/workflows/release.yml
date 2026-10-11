@@ -28,7 +28,8 @@ jobs:
         run: |
           mkdir -p out/QR-Code-Generator
           cp qr_generator.py QR-Code-Generator.pyw README.md README.en.md \
-             LICENSE NOTICE CHANGELOG.md requirements.txt out/QR-Code-Generator/
+             LICENSE NOTICE CHANGELOG.md requirements.txt \
+             qr_code_generator.ico out/QR-Code-Generator/
           cd out && zip -r "QR-Code-Generator-${GITHUB_REF_NAME}-quellen.zip" QR-Code-Generator
 
       - uses: actions/upload-artifact@v7
@@ -55,10 +56,15 @@ jobs:
       # Fassung 8 kein __version__ mehr; ohne die Metadaten stuende im Reiter
       # "Info & Copyright" statt der Versionsnummer nur "eingebettet".
       # --windowed unterdrueckt das Konsolenfenster hinter der Oberflaeche.
+      # --icon legt das Symbol als Ressource in die EXE; die Oberflaeche holt
+      # es sich von dort auch fuer die Titelleiste, ein --add-data fuer die
+      # .ico braucht es deshalb nicht. Gebaut wird aus qr_generator.py, nicht
+      # aus der .pyw - der Starter ist nur fuer den Doppelklick da.
       - name: EXE bauen
         run: >
           pyinstaller --noconfirm --onefile --windowed
           --name "QR-Code-Generator"
+          --icon "qr_code_generator.ico"
           --copy-metadata qrcode
           qr_generator.py
 

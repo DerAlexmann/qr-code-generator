@@ -56,6 +56,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 PROGRAMM = "QR-Code-Generator"
 VERSION = "1.1.5"
+SYMBOLDATEI = "qr_code_generator.ico"
 
 
 # --------------------------------------------------------------------------
@@ -2248,6 +2249,24 @@ def startfehler_melden(text: str) -> None:
         pass
 
 
+def fenstersymbol_setzen(wurzel) -> None:
+    """Programmsymbol in die Titelleiste aller Fenster - statt der Tk-Feder.
+
+    Die EXE traegt das Symbol als Ressource in sich, Windows liest es direkt
+    aus ihr heraus; die .ico muss dafuer nicht mitgebuendelt werden. Das
+    Script nimmt die Datei neben sich, falls sie dort liegt - fehlt sie,
+    bleibt es bei der Voreinstellung von Tk. Ein Programm ohne Symbol ist
+    unschoen, ein Programm, das deswegen nicht startet, waere schlimmer.
+    """
+    quelle = sys.executable if ist_eingefroren() else os.path.join(programm_ordner(),
+                                                                   SYMBOLDATEI)
+    if sys.platform == "win32" and os.path.isfile(quelle):
+        try:
+            wurzel.iconbitmap(default=quelle)
+        except _tk.TclError:
+            pass
+
+
 def gui_starten(args: argparse.Namespace | None = None) -> int:
     """Startet die Oberfläche; Kommandozeilenwerte dienen als Startbelegung."""
     global _tk, _ttk, _ImageTk
@@ -2297,6 +2316,7 @@ def gui_starten(args: argparse.Namespace | None = None) -> int:
 
     skalierung = dpi_bewusstsein_aktivieren()
     wurzel = _tk.Tk()
+    fenstersymbol_setzen(wurzel)
     if skalierung > 1.0:
         # Schriftgroessen sind in Punkt angegeben und muessen mitwachsen.
         wurzel.tk.call("tk", "scaling", skalierung * 96.0 / 72.0)
