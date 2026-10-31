@@ -52,7 +52,7 @@ except ImportError:                          # dann bleibt nur noch SVG uebrig
 
 
 PROGRAMM = "QR-Code-Generator"
-VERSION = "1.1.7"
+VERSION = "1.1.8"
 SYMBOLDATEI = "qr_code_generator.ico"
 
 
