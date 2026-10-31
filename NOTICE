@@ -49,3 +49,13 @@ Tkinter / Tcl-Tk - Tcl/Tk License (BSD-artig)
 In der gebündelten EXE sind diese Bibliotheken enthalten. Ihre jeweiligen
 Lizenzbedingungen gelten unverändert fort; die hier genannten Namen und
 Fundstellen dienen der Nachvollziehbarkeit.
+
+Die EXE bringt darüber hinaus die Python-Laufzeit und die Bibliotheken von
+Pillow mit. Alle Bestandteile und ihre Lizenzen stehen vollständig in
+DRITTANBIETER-LIZENZEN.md; die vollständigen Lizenztexte liegen jedem Release
+als QR-Code-Generator-lizenztexte.zip bei.
+
+The executable also bundles the Python runtime and Pillow's libraries. All
+components and their licenses are listed in DRITTANBIETER-LIZENZEN.md; the full
+license texts are attached to every release as
+QR-Code-Generator-lizenztexte.zip.
