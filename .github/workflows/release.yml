@@ -1,6 +1,6 @@
 name: Release
 
-# Baut bei einem Versions-Tag (z. B. v1.1) eine Windows-EXE und ein
+# Baut bei einem Versions-Tag (z. B. v1.1.8) eine Windows-EXE und ein
 # plattformunabhaengiges ZIP und haengt beides an einen GitHub-Release.
 #
 # Die EXE entsteht im --onefile-Modus. Damit Sprache und Farbschema einen
@@ -8,14 +8,19 @@ name: Release
 # gepackten Zustand (sys.frozen) und legt die Einstellungen neben der EXE ab
 # statt in dem temporaeren Entpackordner, den PyInstaller bei jedem Start
 # anlegt und beim Beenden wieder loescht.
+#
+# Der Lauf ist auch ohne Tag brauchbar: Ueber workflow_dispatch bauen und
+# pruefen beide Bau-Jobs durch, nur der veroeffentlichende Job bleibt aus.
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
 
+# Lesen reicht fuer die Bau-Jobs: Sie installieren Pakete und packen eine EXE.
+# Schreiben darf allein der Job, der den Release anlegt.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quellpaket:
@@ -27,14 +32,27 @@ jobs:
       - name: ZIP packen
         run: |
           mkdir -p out/QR-Code-Generator
+          # Die beiden Hilfsskripte und requirements-build.txt liegen mit im
+          # Paket: DRITTANBIETER-LIZENZEN.md verweist auf
+          # lizenztexte_sammeln.py, und wer die EXE selbst bauen will, braucht
+          # die festen Fassungen. Ein Verweis auf eine Datei, die nicht
+          # mitkommt, ist kein Verweis.
           cp qr_generator.py QR-Code-Generator.pyw README.md README.en.md \
-             LICENSE NOTICE CHANGELOG.md requirements.txt \
+             LICENSE NOTICE DRITTANBIETER-LIZENZEN.md CHANGELOG.md \
+             requirements.txt requirements-build.txt \
+             versionsinfo_erzeugen.py lizenztexte_sammeln.py \
              qr_code_generator.ico out/QR-Code-Generator/
-          cd out && zip -r "QR-Code-Generator-${GITHUB_REF_NAME}-quellen.zip" QR-Code-Generator
+          # Schraegstriche im Ref-Namen werden ersetzt: Bei einem Probelauf von
+          # einem Branch wie dependabot/pip/... zeigte der Pfad sonst in einen
+          # Ordner, den es nicht gibt. Tags wie v1.1.8 bleiben, wie sie sind.
+          cd out && zip -r "QR-Code-Generator-${GITHUB_REF_NAME//\//-}-quellen.zip" QR-Code-Generator
 
       - uses: actions/upload-artifact@v7
         with:
           name: quellpaket
+          # Vorgabe waere "warn": Der Release entstuende dann stillschweigend
+          # ohne Quellpaket, und rot wird dabei nichts.
+          if-no-files-found: error
           path: out/*.zip
 
   windows-exe:
@@ -48,9 +66,19 @@ jobs:
           python-version: "3.12"
 
       - name: Abhaengigkeiten installieren
+        # Genaue Versionen aus requirements-build.txt: Derselbe Tag soll
+        # zweimal dieselbe EXE ergeben. Die Untergrenzen in requirements.txt
+        # gelten weiter fuer alle, die das Skript selbst laufen lassen.
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pyinstaller
+          pip install -r requirements-build.txt
+
+      - name: Versionsangaben erzeugen
+        # Ohne --version-file bleiben Produktname, Version und Urheber in den
+        # Dateieigenschaften leer - PyInstaller legt von sich aus keine
+        # Versionsressource an. Die Angaben kommen aus VERSION in
+        # qr_generator.py, derselben Stelle, aus der auch die Titelleiste liest.
+        run: python versionsinfo_erzeugen.py
 
       # --copy-metadata qrcode nimmt die Paketdaten mit. qrcode fuehrt seit
       # Fassung 8 kein __version__ mehr; ohne die Metadaten stuende im Reiter
@@ -65,8 +93,38 @@ jobs:
           pyinstaller --noconfirm --onefile --windowed
           --name "QR-Code-Generator"
           --icon "qr_code_generator.ico"
+          --version-file versionsinfo.txt
           --copy-metadata qrcode
           qr_generator.py
+
+      - name: Versionsangaben der EXE pruefen
+        # Der einzige Schritt, der die fertige Datei ansieht: Fehlt die
+        # Versionsressource, faellt es sonst niemandem auf - bei 1.1.7 ist
+        # genau das passiert.
+        #
+        # Verglichen wird gegen versionsinfo.txt, die eben aus VERSION in
+        # qr_generator.py entstanden ist. Damit ist die ganze Kette belegt -
+        # Quelltext, erzeugte Datei, fertige EXE - und zwar auch bei einem
+        # Probelauf ohne Tag. Bei einem Tag muss die Version zusaetzlich zum
+        # Tag passen, sonst wurde VERSION vergessen.
+        run: |
+          $soll = Get-Content versionsinfo.txt -Raw
+          $sollName = [regex]::Match($soll, "StringStruct\('ProductName', '([^']+)'\)").Groups[1].Value
+          $sollVersion = [regex]::Match($soll, "StringStruct\('ProductVersion', '([^']+)'\)").Groups[1].Value
+          if (-not $sollName -or -not $sollVersion) {
+            throw "versionsinfo.txt enthaelt keine Soll-Werte - wurde sie erzeugt?"
+          }
+          $info = (Get-Item "dist\QR-Code-Generator.exe").VersionInfo
+          if (-not $info.ProductName -or -not $info.ProductVersion) {
+            throw "Die EXE traegt keine Versionsangaben - wurde --version-file uebergeben?"
+          }
+          Write-Output "ProductName: $($info.ProductName), ProductVersion: $($info.ProductVersion)"
+          if ($info.ProductName -ne $sollName -or $info.ProductVersion -ne $sollVersion) {
+            throw "Die EXE meldet $($info.ProductName) $($info.ProductVersion), erwartet war $sollName $sollVersion."
+          }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and "v$($info.ProductVersion)" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $($env:GITHUB_REF_NAME) passt nicht zu ProductVersion $($info.ProductVersion) - VERSION vergessen?"
+          }
 
       - name: Startet die EXE ueberhaupt?
         # Ein reiner Rauchtest: die EXE wird gestartet und nach wenigen
@@ -78,15 +136,97 @@ jobs:
           Stop-Process -Id $p.Id -Force
           Write-Output "EXE laeuft."
 
+      - name: Schreibt die EXE wirklich einen Code?
+        # Dass das Fenster stehen bleibt, beweist wenig: Eine --windowed-EXE
+        # mit einem Fehler beim Start zeigt einen Meldungsdialog und laeuft
+        # dabei weiter - der Rauchtest oben waere gruen. Dieser Schritt nimmt
+        # die Kommandozeile der EXE und verlangt eine fertige Datei. Damit ist
+        # belegt, dass qrcode, Pillow und die mitgenommenen Paketdaten im
+        # gepackten Zustand wirklich geladen werden.
+        run: |
+          $p = Start-Process -FilePath "dist\QR-Code-Generator.exe" `
+                 -ArgumentList '"Rauchtest"','-f','PNG','-s','256','-a','rauchtest','-q' `
+                 -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Die EXE endete mit Exit $($p.ExitCode)." }
+          $datei = Get-ChildItem rauchtest -Filter *.png | Select-Object -First 1
+          if (-not $datei) { throw "Die EXE hat keine PNG-Datei geschrieben." }
+          if ($datei.Length -eq 0) { throw "$($datei.Name) ist leer geblieben." }
+          Write-Output "$($datei.Name): $($datei.Length) Bytes"
+
+      - name: Pruefsumme bilden
+        # Die SHA-256 haengt als SHA256SUMS.txt am Release: Wer die EXE laedt,
+        # kann sie vor dem ersten Start vergleichen - sie ist nicht signiert.
+        # Bisher wurde diese Summe nach dem Hochladen von Hand gebildet.
+        #
+        # Zwei Leerzeichen zwischen Summe und Name, und am Ende nur ein
+        # Zeilenumbruch nach Unix-Art: Genau das erwartet "sha256sum -c".
+        # Out-File schreibt unter Windows CRLF, und dann liest sha256sum den
+        # Dateinamen mit einem angehaengten Wagenruecklauf und findet die EXE
+        # nicht.
+        run: |
+          $h = (Get-FileHash "dist\QR-Code-Generator.exe" -Algorithm SHA256).Hash.ToLower()
+          Write-Output "SHA-256: $h"
+          # Der Pfad ausdruecklich absolut: .NET richtet sich nicht nach dem
+          # Arbeitsordner von PowerShell, sondern nach dem des Prozesses.
+          $ziel = Join-Path $PWD "dist\SHA256SUMS.txt"
+          [IO.File]::WriteAllText($ziel, "$h  QR-Code-Generator.exe`n")
+
+      - name: Lizenzhinweise und Lizenztexte beilegen
+        # Die Hinweise muessen den Anwender erreichen, nicht nur das
+        # Repository. Die Volltexte kommen aus den Paketen, die gerade
+        # installiert wurden - so passen sie zu genau dieser EXE.
+        run: |
+          Copy-Item DRITTANBIETER-LIZENZEN.md dist\
+          python lizenztexte_sammeln.py dist\lizenztexte
+          # Ein gescheitertes Python-Skript laesst PowerShell nicht von selbst
+          # abbrechen: Bei einem mehrzeiligen run: zaehlt der Rueckgabewert des
+          # letzten Befehls, und Compress-Archive wuerde den halb gefuellten
+          # Ordner einpacken.
+          if ($LASTEXITCODE -ne 0) { throw "lizenztexte_sammeln.py ist gescheitert." }
+          Compress-Archive -Path "dist\lizenztexte\*" -DestinationPath "dist\QR-Code-Generator-lizenztexte.zip"
+
+      - name: Liegen alle Anhaenge bereit?
+        # if-no-files-found: error schlaegt erst an, wenn ueber alle Muster
+        # zusammen keine einzige Datei gefunden wird - eine einzelne fehlende
+        # Datei faengt es nicht. Deshalb wird hier jede einzeln verlangt.
+        run: |
+          $erwartet = @(
+            "dist\QR-Code-Generator.exe",
+            "dist\SHA256SUMS.txt",
+            "dist\DRITTANBIETER-LIZENZEN.md",
+            "dist\QR-Code-Generator-lizenztexte.zip"
+          )
+          foreach ($datei in $erwartet) {
+            if (-not (Test-Path $datei)) { throw "Es fehlt: $datei" }
+            $groesse = (Get-Item $datei).Length
+            if ($groesse -eq 0) { throw "$datei ist leer." }
+            Write-Output "$datei - $groesse Bytes"
+          }
+
       - uses: actions/upload-artifact@v7
         with:
           name: windows-exe
-          path: dist/QR-Code-Generator.exe
+          # Vorgabe waere "warn": Dann entstuende das Artefakt auch dann, wenn
+          # gar nichts gefunden wird. Dass jede einzelne Datei da ist, prueft
+          # der Schritt darueber - diese Einstellung allein wuerde es nicht.
+          if-no-files-found: error
+          path: |
+            dist/QR-Code-Generator.exe
+            dist/SHA256SUMS.txt
+            dist/DRITTANBIETER-LIZENZEN.md
+            dist/QR-Code-Generator-lizenztexte.zip
 
   release:
     name: Release veroeffentlichen
     needs: [quellpaket, windows-exe]
     runs-on: ubuntu-latest
+    # Nur bei einem Tag. Ohne Tag kennt die Action keinen Namen fuer den
+    # Release und bricht mit "Missing tag_name parameter" ab - ein Probelauf
+    # per workflow_dispatch soll bauen und pruefen duerfen, ohne an diesem
+    # Schritt rot zu werden. Die Bau-Jobs bleiben deshalb ohne Bedingung.
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v8
         with:
@@ -95,8 +235,14 @@ jobs:
       - name: Release anlegen
         uses: softprops/action-gh-release@v3
         with:
-          draft: true          # erst pruefen, dann von Hand veroeffentlichen
+          draft: true          # erst pruefen, dann veroeffentlichen
           generate_release_notes: true
+          # Vorgabe ist false: Ein Pfad, der nichts trifft, wuerde den Release
+          # ohne diese Datei anlegen. Hier darf nichts fehlen.
+          fail_on_unmatched_files: true
           files: |
             artefakte/quellpaket/*.zip
             artefakte/windows-exe/QR-Code-Generator.exe
+            artefakte/windows-exe/SHA256SUMS.txt
+            artefakte/windows-exe/DRITTANBIETER-LIZENZEN.md
+            artefakte/windows-exe/QR-Code-Generator-lizenztexte.zip

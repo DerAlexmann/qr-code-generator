@@ -91,3 +91,56 @@ jobs:
           done
           ls -l ausgabe
           test "$(ls ausgabe | wc -l)" -eq 10
+
+  bauversionen:
+    name: Festgenagelte Bauversionen
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      # Genau die Versionen, mit denen die veroeffentlichte EXE entsteht -
+      # samt PyInstaller. Ohne diesen Job liefe die gepinnte Kombination
+      # erstmals beim Tag, und eine unvertraegliche Anhebung von Dependabot
+      # fiele erst im Release auf. Hier laeuft sie in jedem Pull Request.
+      - name: Bauversionen installieren
+        run: pip install -r requirements-build.txt -r requirements-dev.txt
+
+      # Importieren allein beweist nichts: Dass qrcode und Pillow sich laden
+      # lassen, heisst nicht, dass sie zusammen eine Datei schreiben. Geprueft
+      # werden beide Wege - PNG ueber Pillow, SVG ohne Pillow.
+      - name: Echte Ausgabe mit den Bauversionen
+        run: |
+          python qr_generator.py "Bauversionen-Test" -f PNG -s 512 -a ausgabe -q
+          if ($LASTEXITCODE -ne 0) { throw "PNG ist gescheitert (Exit $LASTEXITCODE)." }
+          python qr_generator.py "Bauversionen-Test" -f SVG -s 512 -a ausgabe -q
+          if ($LASTEXITCODE -ne 0) { throw "SVG ist gescheitert (Exit $LASTEXITCODE)." }
+          foreach ($datei in Get-ChildItem ausgabe) {
+            if ($datei.Length -eq 0) { throw "$($datei.Name) ist leer geblieben." }
+            Write-Output "$($datei.Name): $($datei.Length) Bytes"
+          }
+          if ((Get-ChildItem ausgabe).Count -ne 2) { throw "Es sollten zwei Dateien entstehen." }
+
+      # Beide Hilfsskripte des Baus laufen hier mit: Sie werden sonst erst beim
+      # Tag ausgefuehrt, und ein Fehler darin faellt dann im Release auf.
+      # Nach jedem Aufruf wird der Rueckgabewert geprueft - bei einem
+      # mehrzeiligen run: zaehlt unter PowerShell sonst nur der letzte Befehl,
+      # und ein gescheitertes erstes Skript bliebe gruen.
+      - name: Versionsangaben und Lizenztexte erzeugen
+        run: |
+          python versionsinfo_erzeugen.py
+          if ($LASTEXITCODE -ne 0) { throw "versionsinfo_erzeugen.py ist gescheitert." }
+          python lizenztexte_sammeln.py lizenztexte
+          if ($LASTEXITCODE -ne 0) { throw "lizenztexte_sammeln.py ist gescheitert." }
+
+      - name: Tests gegen die Bauversionen
+        env:
+          # Ohne diese Variable darf der Test, der die Versionsdatei von
+          # PyInstaller einlesen laesst, das Paket ueberspringen - und waere
+          # gruen, ohne etwas geprueft zu haben. Hier ist PyInstaller
+          # installiert, also ist er Pflicht.
+          PYINSTALLER_PFLICHT: "1"
+        run: python -m pytest tests/test_verpackung.py -v
