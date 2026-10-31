@@ -9,6 +9,88 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+## [1.1.8] – 2026-10-31
+
+Diese Version ändert am Programm selbst nichts. Sie holt nach, was zur
+Auslieferung einer unsignierten EXE gehört: nachsehen zu können, was man
+heruntergeladen hat, und zu wissen, was darin steckt.
+
+### Hinzugefügt
+
+- **Die EXE trägt ihre Versionsangaben.** Bis 1.1.7 waren Produktname,
+  Version und Urheber in den Dateieigenschaften leer – PyInstaller legt ohne
+  `--version-file` keine Versionsressource an. Wer die Datei heruntergeladen
+  hatte, konnte nicht nachsehen, welche Fassung vor ihm lag. Die Angaben
+  entstehen jetzt aus `VERSION` in `qr_generator.py`, derselben Stelle, aus der
+  auch Titelleiste und Infoseite lesen; der Workflow liest sie aus der fertigen
+  EXE zurück und bricht ab, wenn sie fehlen oder nicht zum Tag passen.
+- **Eine Prüfsumme liegt dem Release bei.** `SHA256SUMS.txt` entsteht beim
+  Bauen. Wer die unsignierte EXE vor dem ersten Start vergleichen möchte,
+  findet den Wert dort statt in den Release-Notizen; beide READMEs nennen den
+  Befehl dazu.
+- **Lizenzen der Fremdkomponenten.** `DRITTANBIETER-LIZENZEN.md` listet
+  zweisprachig auf, was in der EXE steckt – Python, Tcl/Tk, qrcode, Pillow mit
+  seinen Bilddecodern, die Teile der Python-Laufzeit und den Bootloader von
+  PyInstaller – jeweils mit Lizenz und geprüftem Link. Ausgelesen wurde das aus
+  der fertigen EXE, nicht aus den Abhängigkeiten geschätzt. Ergebnis: Es ist
+  **kein Bestandteil unter GPL oder LGPL** darin, der auf das Gesamtwerk
+  durchschlägt; die EXE bleibt als Ganzes unter der MIT-Lizenz. Die
+  vollständigen Lizenztexte hängen als
+  `QR-Code-Generator-lizenztexte.zip` am Release – MIT, BSD, die zlib-Lizenz
+  und die FreeType-Lizenz verlangen den Text selbst, nicht nur einen Verweis.
+  Gesammelt werden sie beim Bauen aus den Paketen, die dafür installiert
+  wurden, damit sie zur gebauten EXE passen.
+- **Fester Bau.** `requirements-build.txt` nennt genaue Fassungen von
+  PyInstaller, qrcode und Pillow. Derselbe Tag soll zweimal dieselbe EXE
+  ergeben, und eine fehlerhafte neue Fassung soll kein Release kippen. Offen
+  gesagt: Die Pakete, die pip dabei mitzieht, und das Laufzeitabbild von Python
+  sind damit nicht festgelegt, und es sind keine Hash-Pins – Bit für Bit
+  reproduzierbar ist der Bau also nicht. Ein eigener CI-Job baut in jedem Pull
+  Request mit genau diesen Fassungen und schreibt damit eine echte Datei.
+- **`tests/test_verpackung.py`** wacht über all das: Lizenztabelle in beiden
+  Sprachen samt Lizenzangabe, Prüfsumme und ihr Format, Versionsressource mit
+  ihren Werten, feste Fassungen und ihre Untergrenzen, Dependabot, der
+  Entwurfsstatus des Releases, die Anhänge und der Hinweis zum ersten Start.
+  Jeder dieser Wächter wurde einmal absichtlich rot gesetzt – 84
+  Verschlechterungen, einzeln eingebaut und zurückgenommen. Was nicht rot
+  wird, ist kein Wächter.
+
+### Geändert
+
+- **Der Release-Workflow lässt sich proben.** Der veröffentlichende Job hängt
+  jetzt an einem Tag, die beiden Bau-Jobs nicht. Ein Lauf über
+  `workflow_dispatch` baut und prüft damit vollständig durch, statt am
+  fehlenden Tag-Namen zu scheitern – bisher war ein Probelauf zwangsläufig rot,
+  und ein roter Lauf, der nichts bedeutet, wird irgendwann nicht mehr
+  angesehen.
+- Die laschen Vorgaben der Actions sind korrigiert: `if-no-files-found: error`
+  statt `warn` und `fail_on_unmatched_files: true`. Bisher wäre ein Release
+  stillschweigend ohne Prüfsumme oder Lizenzdatei entstanden, ohne dass etwas
+  rot wird.
+- Schrägstriche im Ref-Namen werden beim Packen ersetzt, damit ein Probelauf
+  von einem Zweig wie `dependabot/pip/…` nicht am Pfad scheitert.
+- **Der Rauchtest verlangt jetzt eine fertige Datei von der EXE.** Dass das
+  Fenster nach zwanzig Sekunden noch steht, beweist wenig: Eine
+  `--windowed`-EXE mit einem Fehler beim Start zeigt einen Meldungsdialog und
+  läuft dabei weiter. Zusätzlich wird deshalb die Kommandozeile der EXE
+  aufgerufen und ein geschriebener PNG-Code verlangt – damit ist belegt, dass
+  qrcode, Pillow und die mitgenommenen Paketdaten im gepackten Zustand
+  wirklich geladen werden.
+- Jeder Anhang wird vor dem Hochladen einzeln verlangt.
+  `if-no-files-found: error` schlägt erst an, wenn über alle Muster zusammen
+  gar nichts gefunden wird – eine einzelne fehlende Prüfsumme hätte es nicht
+  bemerkt.
+- Schreibrechte hat nur noch der veröffentlichende Job. Die Bau-Jobs
+  installieren Pakete und packen eine EXE; sie brauchen den Token nicht.
+- `SHA256SUMS.txt` wird mit Unix-Zeilenende geschrieben. Mit dem
+  Windows-Zeilenende las `sha256sum -c` unter Linux den Dateinamen mit einem
+  angehängten Wagenrücklauf und fand die EXE nicht; `Get-FileHash` unter
+  Windows war davon nicht betroffen.
+- Das Quellpaket enthält jetzt auch `requirements-build.txt` und die beiden
+  Hilfsskripte des Baus. `DRITTANBIETER-LIZENZEN.md` verweist auf
+  `lizenztexte_sammeln.py` – ein Verweis auf eine Datei, die nicht mitkommt,
+  ist kein Verweis.
+
 ## [1.1.7] – 2026-10-11
 
 ### Sicherheit
