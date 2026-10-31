@@ -9,6 +9,20 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
 
 <!-- Neue Einträge hier sammeln, bis die nächste Version getaggt wird. -->
 
+### Behoben
+
+- **Die erste Zeile von `qr_generator.py` nannte noch 1.1.7.** Die
+  Versionsnummer steht dort ein zweites Mal, und beim Sprung auf 1.1.8 blieb
+  sie stehen. Nichts liest diesen Dateikopf – Titelleiste, Infoseite,
+  `--version` und die Dateieigenschaften der EXE lesen alle `VERSION` –, aber
+  im Quellpaket von 1.1.8 steht dadurch eine falsche Angabe. Ein neuer Test in
+  `tests/test_verpackung.py` vergleicht beide Stellen; im Release 1.1.8 selbst
+  bleiben EXE, Quellpaket und Prüfsummen unberührt.
+- **Auch der Kopf dieses Protokolls wird jetzt bewacht.** Die Versionsnummer
+  stand an einer dritten Stelle ohne Wächter: Der neueste Abschnitt hier und
+  `VERSION` konnten auseinanderlaufen, ohne dass etwas rot wird – dieselbe
+  Fehlerklasse wie beim Dateikopf. Ein zweiter Test vergleicht beide.
+
 ## [1.1.8] – 2026-10-31
 
 Diese Version ändert am Programm selbst nichts. Sie holt nach, was zur
