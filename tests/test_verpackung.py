@@ -37,6 +37,11 @@ RELEASE_YML = WURZEL / ".github" / "workflows" / "release.yml"
 CI_YML = WURZEL / ".github" / "workflows" / "ci.yml"
 DEPENDABOT = WURZEL / ".github" / "dependabot.yml"
 QUELLTEXT = WURZEL / "qr_generator.py"
+WORKFLOW_ORDNER = WURZEL / ".github" / "workflows"
+# Alle Workflow-Dateien, keine feste Liste: Eine dritte Datei - fuer Labels,
+# Automerge, was auch kommt - waere sonst nie geprueft, und das ohne jede
+# Fehlermeldung. Deshalb auch .yaml, nicht nur .yml.
+WORKFLOWS = sorted(pfad.name for pfad in WORKFLOW_ORDNER.glob("*.y*ml"))
 
 # Die englische Haelfte der Lizenzdatei beginnt mit dieser Ueberschrift.
 ENGLISCHE_UEBERSCHRIFT = "# Licenses of third-party components"
@@ -49,6 +54,28 @@ ENGLISCHE_UEBERSCHRIFT = "# Licenses of third-party components"
 def ohne_kommentare(text: str) -> str:
     """Kommentarzeilen weg - ein Kommentar ist kein Beweis."""
     return "\n".join(z for z in text.splitlines() if not z.lstrip().startswith("#"))
+
+
+def fremde_verweise(text: str) -> list[tuple[str, str]]:
+    """Jedes uses: auf eine Action ausserhalb von actions/*, als (Zeile, Verweis)."""
+    gefunden = []
+    for zeile in ohne_kommentare(text).splitlines():
+        # Nicht nach "uses:" als Teilzeichenkette suchen: "uses : x" und
+        # '"uses": x' sind gueltiges YAML und wuerden still uebersprungen.
+        # Der Blick zurueck haelt "reuses:" und aehnliche Schluessel draussen.
+        treffer = re.search(r"""(?<![\w"'-])["']?uses["']?\s*:\s*(\S.*)""", zeile)
+        if not treffer:
+            continue
+        verweis = treffer.group(1).strip().strip("'\"")
+        # Eigene Actions im Repository (./.github/actions/...) sind nicht fremd
+        # und lassen sich auch nicht festnageln - sie liegen in diesem Commit.
+        if verweis.startswith("./"):
+            continue
+        # Nur die echte Organisation actions: "actions/../anderswo" nicht.
+        if verweis.lower().startswith("actions/") and ".." not in verweis:
+            continue
+        gefunden.append((zeile, verweis))
+    return gefunden
 
 
 def jobs_zerlegen(text: str) -> dict[str, str]:
@@ -1078,7 +1105,7 @@ def test_changelog_nennt_die_aktuelle_version(qr):
     )
 
 
-@pytest.mark.parametrize("datei", ["ci.yml", "release.yml"])
+@pytest.mark.parametrize("datei", WORKFLOWS)
 def test_fremde_actions_haengen_an_einem_commit(datei):
     """Ein Tag ist verschiebbar, ein Commit-Hash nicht.
 
@@ -1086,18 +1113,15 @@ def test_fremde_actions_haengen_an_einem_commit(datei):
     softprops/action-gh-release ist das der einzige Job mit contents: write -
     wer das Repository dieser Action uebernimmt, koennte "v3" auf eigenen Code
     zeigen lassen. Die Actions von GitHub selbst duerfen am Tag bleiben.
+
+    Die Grenze dieses Tests: Dass der Hash wirklich zu der Fassung im Kommentar
+    und zu diesem Action-Repository gehoert, laesst sich ohne Netz nicht
+    pruefen. 40 Hex-Zeichen koennen auch ein Hash aus einer Abspaltung sein.
     """
-    text = (WURZEL / ".github" / "workflows" / datei).read_text(encoding="utf-8")
-    # Kommentarzeilen weg: Ein erwaehnter "uses:"-Verweis in einer Erklaerung
-    # ist kein Aufruf. Der Kommentar *hinter* dem Hash bleibt stehen.
-    geprueft = 0
-    for zeile in ohne_kommentare(text).splitlines():
-        if "uses:" not in zeile:
-            continue
-        verweis = zeile.split("uses:", 1)[1].strip()
-        if verweis.startswith("actions/"):
-            continue
-        name, _, rest = verweis.partition("@")
+    text = (WORKFLOW_ORDNER / datei).read_text(encoding="utf-8")
+    for zeile, verweis in fremde_verweise(text):
+        name, trenner, rest = verweis.partition("@")
+        assert trenner, f"{datei}: {verweis!r} nennt keine Fassung - weder Tag noch Hash."
         ref = rest.split("#")[0].strip()
         assert re.fullmatch(r"[0-9a-f]{40}", ref), (
             f"{datei}: {name} haengt an {ref!r} statt an einem Commit-Hash."
@@ -1105,14 +1129,36 @@ def test_fremde_actions_haengen_an_einem_commit(datei):
         # Die Fassung im Kommentar ist nicht Zierde: Dependabot liest sie von
         # dort und schreibt sie beim Anheben mit. Ohne sie weiss ausserdem
         # niemand, welche Fassung der Hash ist.
-        assert re.search(r"#\s*v\d+\.\d+", zeile), (
+        assert re.search(r"#\s*v?\d+\.\d+", zeile), (
             f"{datei}: {name} nennt keine Fassung im Kommentar hinter dem Hash."
         )
-        geprueft += 1
-    # Die Zusage gilt fuer release.yml - dort steckt die fremde Action. Faellt
-    # sie durch ein Versehen ganz aus der Datei, soll das auffallen.
-    if datei == "release.yml":
-        assert geprueft, "In release.yml wurde keine fremde Action geprueft."
+
+
+def test_mindestens_eine_fremde_action_wird_geprueft():
+    """Sonst waere der Waechter darueber gruen, weil es nichts zu pruefen gibt.
+
+    Faellt die fremde Action durch ein Versehen aus den Workflows - oder findet
+    die Suche sie nicht mehr, weil jemand die Schreibweise aendert -, soll das
+    auffallen und nicht als Erfolg durchgehen.
+    """
+    alle = [verweis for datei in WORKFLOWS
+            for _, verweis in fremde_verweise(
+                (WORKFLOW_ORDNER / datei).read_text(encoding="utf-8"))]
+    assert alle, "Keine fremde Action in den Workflows gefunden - prueft der Waechter noch etwas?"
+
+
+def test_dependabot_beobachtet_die_github_actions():
+    """Ein Hash zieht nicht von allein nach - das ist der Preis fuer seine Festigkeit.
+
+    Faellt das github-actions-Oekosystem aus dependabot.yml, bleibt die
+    festgenagelte Action auf dem Stand von heute stehen, und niemand erfaehrt
+    es. Dann waere das Festnageln eine Verschlechterung, nicht eine
+    Verbesserung.
+    """
+    text = ohne_kommentare(DEPENDABOT.read_text(encoding="utf-8"))
+    assert re.search(r'package-ecosystem:\s*"?github-actions"?', text), (
+        "dependabot.yml sieht die GitHub-Actions nicht an - der Hash veraltet still."
+    )
 
 
 @pytest.mark.parametrize("datei", ["README.md", "README.en.md"])

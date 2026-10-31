@@ -31,8 +31,12 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   Repository der Action übernimmt, könnte `v3` auf eigenen Code zeigen lassen
   und mit diesem Recht laufen. Ein Hash lässt sich nicht verschieben. Die
   Fassung steht als Kommentar dahinter, damit Dependabot sie weiter anhebt;
-  die Actions von GitHub selbst bleiben beim Tag. Ein Test verlangt das für
-  jeden Verweis, der nicht mit `actions/` beginnt.
+  die Actions von GitHub selbst bleiben beim Tag. Drei Tests wachen darüber:
+  Jeder Verweis in **jeder** Workflow-Datei, der nicht mit `actions/` beginnt,
+  muss an einem Hash hängen und seine Fassung im Kommentar nennen; mindestens
+  eine fremde Action muss überhaupt gefunden werden; und `dependabot.yml` muss
+  die Actions beobachten – ein Hash zieht nicht von allein nach, das ist der
+  Preis für seine Festigkeit.
 
 ## [1.1.8] – 2026-10-31
 
