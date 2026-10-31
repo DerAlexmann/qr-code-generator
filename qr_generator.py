@@ -1,5 +1,5 @@
 """
-QR-Code-Generator 1.1.7 - QR-Codes aus Text erzeugen und als Bild speichern
+QR-Code-Generator 1.1.8 - QR-Codes aus Text erzeugen und als Bild speichern
 
 Erzeugt QR-Codes fuer beliebige textbasierte Inhalte (Text, URLs, WLAN-Zugaenge,
 Kontaktdaten, ...) und speichert sie in verschiedenen Bildformaten und Groessen.

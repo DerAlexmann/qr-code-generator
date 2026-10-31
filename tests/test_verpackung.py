@@ -22,6 +22,7 @@ Runner.
 
 from __future__ import annotations
 
+import ast
 import os
 import re
 import subprocess
@@ -1036,6 +1037,45 @@ def test_security_md_nennt_die_aktuelle_reihe():
     zeilen = [z for z in text.splitlines()
               if z.startswith("|") and reihe in z and "✅" in z]
     assert zeilen, f"SECURITY.md fuehrt {reihe} nicht als unterstuetzt."
+
+
+def test_dateikopf_nennt_dieselbe_fassung_wie_version(qr):
+    """Die Versionsnummer steht ein zweites Mal im Dateikopf - und veraltet dort still.
+
+    Bei 1.1.8 ist genau das passiert: VERSION stand schon auf 1.1.8, die erste
+    Zeile des Quelltextes noch auf 1.1.7. Titelleiste, Infoseite und
+    Dateieigenschaften lesen VERSION, den Dateikopf liest nur, wer die Datei
+    oeffnet - deshalb faellt der Unterschied von allein nie auf.
+    """
+    quelle = ast.parse(QUELLTEXT.read_text(encoding="utf-8"))
+    kopf = (ast.get_docstring(quelle) or "").strip()
+    # Kein eigenes assert fuer den fehlenden Docstring: Das laesst sich nicht rot
+    # setzen, weil "from __future__ import annotations" ihn an die erste Stelle
+    # bindet - ohne ihn laedt die Datei nicht, und jeder Test bricht laut ab.
+    # Der Ersatztext sorgt nur dafuer, dass die Meldung den Fall benennt.
+    titel = kopf.splitlines()[0] if kopf else "<kein Modul-Docstring>"
+    # Mit Leerzeichen dahinter: "1.1.8" steckt auch in "1.1.80".
+    assert titel.startswith(f"{qr.PROGRAMM} {qr.VERSION} "), (
+        f"Der Dateikopf nennt {titel!r}, VERSION steht auf {qr.VERSION}."
+    )
+
+
+def test_changelog_nennt_die_aktuelle_version(qr):
+    """Dieselbe Fehlerklasse wie der Dateikopf: eine Zweitangabe, die still veraltet.
+
+    VERSION wird mit dem Release angehoben, der Abschnitt im Aenderungsprotokoll
+    entsteht im selben Commit. Weichen beide ab, nennt das Quellpaket eine
+    Fassung, zu der kein Eintrag gehoert - oder einen Eintrag ohne Fassung.
+    """
+    text = (WURZEL / "CHANGELOG.md").read_text(encoding="utf-8")
+    # "[Unveroeffentlicht]" sammelt, was noch keine Nummer hat, und zaehlt nicht mit.
+    nummern = [t for t in re.findall(r"^## \[([^\]]+)\]", text, re.MULTILINE)
+               if t[:1].isdigit()]
+    assert nummern, "CHANGELOG.md hat keinen Abschnitt mit einer Versionsnummer."
+    assert nummern[0] == qr.VERSION, (
+        f"Der neueste Eintrag im Aenderungsprotokoll ist {nummern[0]}, "
+        f"VERSION steht auf {qr.VERSION}."
+    )
 
 
 @pytest.mark.parametrize("datei", ["README.md", "README.en.md"])
