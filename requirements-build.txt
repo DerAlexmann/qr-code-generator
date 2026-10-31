@@ -1,0 +1,25 @@
+# Abhaengigkeiten fuer den Bau der Windows-EXE / dependencies for building the EXE
+#
+# Hier stehen genaue Versionen und keine Untergrenzen wie in requirements.txt:
+# Derselbe Tag soll zweimal dieselbe EXE ergeben, und eine fehlerhafte neue
+# Fassung von PyInstaller oder Pillow soll keinen Release kippen. Dependabot
+# hebt diese Zeilen an - dann wird die neue Fassung einmal bewusst geprueft,
+# statt unbemerkt in ein Release zu rutschen.
+#
+# requirements.txt behaelt seine Untergrenzen: Sie gelten fuer alle, die das
+# Skript selbst laufen lassen.
+#
+# Nicht festgenagelt und auch nicht festnagelbar: die Pakete, die pip hier
+# mitzieht (etwa colorama als Abhaengigkeit von qrcode), und das Laufzeitabbild
+# des Python-Interpreters. Das sind keine Hash-Pins (--require-hashes); Bit fuer
+# Bit reproduzierbar ist der Bau damit nicht.
+#
+# Exact versions on purpose: the same tag must produce the same executable.
+# requirements.txt keeps its lower bounds for people running the script
+# themselves. These are not hash pins, so the build is not bit-for-bit
+# reproducible.
+
+pyinstaller==6.22.3
+
+qrcode==8.2
+Pillow==12.3.0
