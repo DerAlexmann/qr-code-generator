@@ -51,6 +51,12 @@ nicht die Bedienung.
 > **tatsächlich mit einem Lesegerät scannen**. Ein Code kann tadellos aussehen
 > und trotzdem unlesbar sein; die Tests können das nicht ersetzen.
 
+Kommt eine Abhängigkeit hinzu oder fällt eine weg, gehören drei Dateien
+nachgezogen: `requirements.txt` (Untergrenze), `requirements-build.txt` (feste
+Fassung für die EXE) und [`DRITTANBIETER-LIZENZEN.md`](DRITTANBIETER-LIZENZEN.md)
+in **beiden** Sprachabschnitten. `tests/test_verpackung.py` wacht darüber und
+schlägt fehl, wenn eine davon fehlt.
+
 ---
 
 ## Aufbau des Projekts

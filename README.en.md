@@ -62,6 +62,10 @@ downloaded, unknown file for a few seconds while it checks it; starting it
 during that time fails with "Access denied". Just wait a moment and start it
 again.
 
+To verify the file beforehand: every release has `SHA256SUMS.txt` attached.
+`Get-FileHash .\QR-Code-Generator.exe -Algorithm SHA256` in PowerShell has to
+show the same value.
+
 Requires Python 3.9 or newer. Tkinter for the window already ships with the
 Windows installers of Python.
 
@@ -232,3 +236,10 @@ READMEs.
 
 Libraries used: [qrcode](https://github.com/lincolnloop/python-qrcode)
 (BSD 3-Clause) and [Pillow](https://python-pillow.org/) (MIT-CMU).
+
+The **Windows executable** additionally bundles the Python runtime, Tcl/Tk and
+Pillow's libraries. Which ones they are and what licences they carry is listed
+in [DRITTANBIETER-LIZENZEN.md](DRITTANBIETER-LIZENZEN.md) – all of them
+permissive, so the executable stays under the MIT License as a whole. The full
+licence texts are attached to every release as
+`QR-Code-Generator-lizenztexte.zip`.

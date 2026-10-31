@@ -62,6 +62,10 @@ Virenschutz hält eine frisch heruntergeladene, unbekannte Datei zudem für ein
 paar Sekunden fest, während er sie prüft; ein Startversuch in dieser Zeit
 bricht mit „Zugriff verweigert" ab. Dann kurz warten und erneut starten.
 
+Wer die Datei vorher vergleichen möchte: Am Release hängt `SHA256SUMS.txt`.
+`Get-FileHash .\QR-Code-Generator.exe -Algorithm SHA256` in PowerShell muss
+denselben Wert zeigen.
+
 Benötigt Python 3.9 oder neuer. Tkinter für die Oberfläche ist bei
 Windows-Installationen von Python bereits enthalten.
 
@@ -237,3 +241,11 @@ der Anwendung, in der `NOTICE` sowie in beiden READMEs.
 
 Verwendete Bibliotheken: [qrcode](https://github.com/lincolnloop/python-qrcode)
 (BSD 3-Clause) und [Pillow](https://python-pillow.org/) (MIT-CMU).
+
+Die **Windows-EXE** bringt zusätzlich die Python-Laufzeit, Tcl/Tk und die
+Bibliotheken von Pillow mit. Welche das sind und unter welcher Lizenz sie
+stehen, listet
+[DRITTANBIETER-LIZENZEN.md](DRITTANBIETER-LIZENZEN.md) auf – alle freizügig
+lizenziert, die EXE bleibt als Gesamtwerk unter der MIT-Lizenz. Die
+vollständigen Lizenztexte liegen jedem Release als
+`QR-Code-Generator-lizenztexte.zip` bei.
