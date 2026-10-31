@@ -31,6 +31,13 @@ dist/
 .eggs/
 *.spec
 
+# Die Versionsangaben der EXE werden aus VERSION in qr_generator.py erzeugt -
+# abgeleitet, deshalb nicht im Repository. Siehe versionsinfo_erzeugen.py.
+versionsinfo.txt
+
+# Die Lizenztexte werden beim Bauen aus den installierten Paketen gesammelt.
+lizenztexte/
+
 # Virtuelle Umgebungen
 .venv/
 venv/
