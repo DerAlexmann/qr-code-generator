@@ -1078,6 +1078,43 @@ def test_changelog_nennt_die_aktuelle_version(qr):
     )
 
 
+@pytest.mark.parametrize("datei", ["ci.yml", "release.yml"])
+def test_fremde_actions_haengen_an_einem_commit(datei):
+    """Ein Tag ist verschiebbar, ein Commit-Hash nicht.
+
+    Eine fremde Action laeuft mit den Rechten des Jobs, der sie aufruft. Bei
+    softprops/action-gh-release ist das der einzige Job mit contents: write -
+    wer das Repository dieser Action uebernimmt, koennte "v3" auf eigenen Code
+    zeigen lassen. Die Actions von GitHub selbst duerfen am Tag bleiben.
+    """
+    text = (WURZEL / ".github" / "workflows" / datei).read_text(encoding="utf-8")
+    # Kommentarzeilen weg: Ein erwaehnter "uses:"-Verweis in einer Erklaerung
+    # ist kein Aufruf. Der Kommentar *hinter* dem Hash bleibt stehen.
+    geprueft = 0
+    for zeile in ohne_kommentare(text).splitlines():
+        if "uses:" not in zeile:
+            continue
+        verweis = zeile.split("uses:", 1)[1].strip()
+        if verweis.startswith("actions/"):
+            continue
+        name, _, rest = verweis.partition("@")
+        ref = rest.split("#")[0].strip()
+        assert re.fullmatch(r"[0-9a-f]{40}", ref), (
+            f"{datei}: {name} haengt an {ref!r} statt an einem Commit-Hash."
+        )
+        # Die Fassung im Kommentar ist nicht Zierde: Dependabot liest sie von
+        # dort und schreibt sie beim Anheben mit. Ohne sie weiss ausserdem
+        # niemand, welche Fassung der Hash ist.
+        assert re.search(r"#\s*v\d+\.\d+", zeile), (
+            f"{datei}: {name} nennt keine Fassung im Kommentar hinter dem Hash."
+        )
+        geprueft += 1
+    # Die Zusage gilt fuer release.yml - dort steckt die fremde Action. Faellt
+    # sie durch ein Versehen ganz aus der Datei, soll das auffallen.
+    if datei == "release.yml":
+        assert geprueft, "In release.yml wurde keine fremde Action geprueft."
+
+
 @pytest.mark.parametrize("datei", ["README.md", "README.en.md"])
 def test_erst_start_hinweis_steht_in_beiden_readmes(datei):
     """Jedes Release mit unsignierter EXE braucht diesen Hinweis - in beiden Sprachen."""

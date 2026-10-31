@@ -233,7 +233,14 @@ jobs:
           path: artefakte
 
       - name: Release anlegen
-        uses: softprops/action-gh-release@v3
+        # Die einzige fremde Action im Projekt - und sie laeuft in dem einen
+        # Job, der contents: write hat. Ein Tag ist verschiebbar: Wer das
+        # Repository dieser Action uebernimmt, koennte "v3" auf eigenen Code
+        # zeigen lassen und damit mit Schreibrecht in diesem Repository
+        # laufen. Ein Commit-Hash laesst sich nicht verschieben. Dependabot
+        # hebt ihn samt der Fassung im Kommentar an; die Actions von GitHub
+        # selbst (actions/*) bleiben beim Tag.
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           draft: true          # erst pruefen, dann veroeffentlichen
           generate_release_notes: true

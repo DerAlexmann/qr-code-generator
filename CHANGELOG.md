@@ -23,6 +23,17 @@ die Versionsnummern folgen der [Semantischen Versionierung](https://semver.org/l
   `VERSION` konnten auseinanderlaufen, ohne dass etwas rot wird – dieselbe
   Fehlerklasse wie beim Dateikopf. Ein zweiter Test vergleicht beide.
 
+### Geändert
+
+- **Die fremde Action im Release-Workflow hängt an einem Commit-Hash.** Sie
+  war an den Tag `v3` gebunden, und sie läuft in dem einen Job, der
+  Schreibrecht auf das Repository hat. Ein Tag ist verschiebbar: Wer das
+  Repository der Action übernimmt, könnte `v3` auf eigenen Code zeigen lassen
+  und mit diesem Recht laufen. Ein Hash lässt sich nicht verschieben. Die
+  Fassung steht als Kommentar dahinter, damit Dependabot sie weiter anhebt;
+  die Actions von GitHub selbst bleiben beim Tag. Ein Test verlangt das für
+  jeden Verweis, der nicht mit `actions/` beginnt.
+
 ## [1.1.8] – 2026-10-31
 
 Diese Version ändert am Programm selbst nichts. Sie holt nach, was zur
